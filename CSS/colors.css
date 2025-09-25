@@ -1,0 +1,18 @@
+:root {
+  --primary-color: #137763;
+  --primary-hover-color: #0e4e41;
+  --accent-color: #e6311c;
+  --accent-hover-color: #e74c3c;
+  --secondary-color: #f1c40f;
+  --background-dark: #1e1e1e;
+  --text-light: #ffffff;
+  --text-black: #333;
+
+  --boder: #ddd;
+  --btn: #f0f0f0;
+  --review: #ffb703;
+  --review-count: #666;
+
+}
+
+

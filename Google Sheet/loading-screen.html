@@ -1,0 +1,141 @@
+<div id="loading-overlay" style="display:none;">
+  <div class="ls-container">
+    <div class="ls-content">
+      <div class="ls-logo">
+        <img src="../logos/logo.svg" alt="Gent Bros" width="72" height="72" />
+      </div>
+      <div class="ls-text">
+        <h2 class="ls-title">GENT BROS</h2>
+        <p class="ls-subtitle">Loading the freshest merch...</p>
+      </div>
+      <div class="ls-progress">
+        <div class="ls-progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    #loading-overlay {
+      --ls-bg: linear-gradient(135deg, rgba(15, 23, 36, 0.98), rgba(11, 18, 32, 0.98));
+      --ls-accent: #06b6d4;
+      --ls-text: #e6eef6;
+      --ls-progress-bg: rgba(255, 255, 255, 0.12);
+      --ls-fade-duration: 0.4s;
+      
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--ls-bg);
+      z-index: 99999;
+      backdrop-filter: blur(8px);
+      transition: opacity var(--ls-fade-duration) ease, visibility var(--ls-fade-duration) ease;
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    #loading-overlay.ls-hidden { 
+      opacity: 0; 
+      visibility: hidden; 
+      pointer-events: none; 
+    }
+    
+    #loading-overlay.ls-visible { 
+      opacity: 1; 
+      visibility: visible; 
+      pointer-events: auto; 
+    }
+
+    .ls-container {
+      width: 100%;
+      max-width: 360px;
+      padding: 0 20px;
+    }
+
+    .ls-content {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25),
+                 0 0 0 1px rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+    }
+
+    .ls-logo {
+      margin-bottom: 20px;
+    }
+
+    .ls-logo img {
+      filter: drop-shadow(0 6px 12px rgba(6, 182, 212, 0.3));
+    }
+
+    .ls-text {
+      margin-bottom: 28px;
+    }
+
+    .ls-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin: 0 0 8px 0;
+      color: var(--ls-text);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .ls-subtitle {
+      color: rgba(230, 238, 246, 0.8);
+      margin: 0;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .ls-progress {
+      height: 4px;
+      background-color: var(--ls-progress-bg);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .ls-progress-bar {
+      height: 100%;
+      width: 45%;
+      background: var(--ls-accent);
+      border-radius: 3px;
+      animation: ls-progress-animation 1.8s infinite ease-in-out;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    }
+
+    @keyframes ls-progress-animation {
+      0% {
+        transform: translateX(-100%);
+      }
+      50% {
+        transform: translateX(220%);
+      }
+      100% {
+        transform: translateX(220%);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .ls-content {
+        padding: 24px;
+        border-radius: 14px;
+      }
+      
+      .ls-title {
+        font-size: 20px;
+      }
+      
+      .ls-logo img {
+        width: 60px;
+        height: 60px;
+      }
+    }
+  </style>
+</div>

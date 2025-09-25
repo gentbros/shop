@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Data Viewer</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_B.png">
+
+  <style>
+    :root {
+      --bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#06b6d4;
+      --glass:rgba(255,255,255,0.03);--success:#10b981;--error:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html, body{
+      height:100%;
+      margin:0;
+      background:linear-gradient(180deg,#071028 0%, #071428 100%);
+      background-attachment: fixed;
+      font-family:Inter,Segoe UI,Roboto,system-ui,Arial;
+      color:#e6eef6;
+      padding:14px;
+      overscroll-behavior: none;
+    }
+
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:18px;flex-wrap:wrap;gap:10px;
+    }
+    header h1{font-size:18px;margin:0}
+    header .actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    button{
+      background:var(--glass);border:1px solid rgba(255,255,255,0.04);
+      color:var(--muted);padding:8px 14px;border-radius:8px;
+      cursor:pointer;transition:all 0.2s ease;
+    }
+    button:hover{background:rgba(255,255,255,0.05);}
+    button:active{transform:translateY(1px);}
+
+    #orders {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap:16px;
+    }
+
+    .order-card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;padding:14px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+
+    .confirmed-select{
+      font-weight:600;font-size:12px;
+      border-radius:8px;padding:4px 8px;
+      border:none;cursor:pointer;appearance:none;
+    }
+    .confirmed-select.yes{background:rgba(16,185,129,0.12);color:var(--success);}
+    .confirmed-select.no{background:rgba(239,68,68,0.12);color:var(--error);}
+    .confirmed-select.pending{background:rgba(6,182,212,0.12);color:var(--accent);}
+
+    .products{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+      gap:10px;
+    }
+    .product-item{
+      display:flex;gap:10px;padding:8px;border-radius:8px;
+      background:rgba(255,255,255,0.015);align-items:center;
+    }
+    .thumb{
+      width:60px;height:60px;background:#061226;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;
+    }
+    .thumb img{width:100%;height:100%;object-fit:contain}
+    .meta{flex:1;min-width:100px}
+    .meta h3{margin:0;font-size:14px}
+    .meta p{margin:2px 0 0 0;color:var(--muted);font-size:12px}
+    .footer{margin-top:10px;font-weight:600}
+
+    @media(max-width:600px){
+      body{padding:10px;}
+      header{flex-direction:column;align-items:flex-start;gap:8px}
+      .header{flex-direction:column;align-items:flex-start;}
+      #orders{grid-template-columns:1fr;}
+      .products{grid-template-columns:1fr;}
+      .thumb{width:80px;height:80px;}
+      .meta h3{font-size:15px}
+      .meta p{font-size:12px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📦 Orders Data Viewer</h1>
+    <div class="actions">
+      <button onclick="location.href='CMS.html'">Go to CMS</button>
+      <button id="filterBtn">Show All</button>
+    </div>
+  </header>
+
+  <div id="orders"></div>
+
+  <!-- 🔥 Loading screen loader -->
+  <script>
+    (function(){
+      window.loadingScreenReady = new Promise((resolve) => {
+        fetch('loading-screen.html', {cache: 'no-store'})
+          .then(r => {
+            if (!r.ok) throw new Error('Could not load loading-screen.html');
+            return r.text();
+          })
+          .then(html => {
+            function inject() {
+              document.body.insertAdjacentHTML('afterbegin', html);
+              const overlay = document.getElementById('loading-overlay');
+              window.showLoading = function() {
+                if (overlay) {
+                  overlay.style.display = 'flex';
+                  overlay.classList.remove('ls-hidden');
+                  overlay.classList.add('ls-visible');
+                }
+              };
+              window.hideLoading = function() {
+                if (overlay) {
+                  overlay.classList.remove('ls-visible');
+                  overlay.classList.add('ls-hidden');
+                  const dur = parseFloat(getComputedStyle(overlay).getPropertyValue('--ls-fade-duration') || 0.45) * 1000;
+                  setTimeout(()=> overlay.style.display = 'none', dur + 50);
+                }
+              };
+              if (overlay) overlay.style.display = 'none';
+              resolve();
+            }
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', inject, {once:true});
+            } else {
+              inject();
+            }
+          })
+          .catch(err => {
+            console.warn('Loading screen failed to load:', err);
+            window.showLoading = window.hideLoading = function(){};
+            resolve();
+          });
+      });
+    })();
+  </script>
+
+  <script>
+    let ordersData = [];
+    let showAll = false;
+
+    async function loadOrders() {
+      await window.loadingScreenReady;
+      showLoading(); // 🔥 show loader while fetching
+
+      try {
+        const response = await fetch("orders.json");
+        ordersData = await response.json();
+        renderOrders();
+      } catch(err) {
+        console.error("Error loading orders:", err);
+      } finally {
+        hideLoading(); // 🔥 hide loader when done
+      }
+    }
+
+    function renderOrders(){
+      const container = document.getElementById("orders");
+      container.innerHTML = "";
+
+      ordersData.forEach(order => {
+        if(!showAll && order.Confirmed !== "pending" && order.Confirmed !== "") return;
+
+        const titles = order.Title.split(/,\n?/);
+        const images = order.Image.split(/,\n?/);
+        const prices = order.Price.split(/,\n?/);
+        const variants = order.Variant.split(/,\n?/);
+
+        let productsHTML = "";
+        for (let i=0; i<titles.length; i++) {
+          productsHTML += `
+            <div class="product-item">
+              <div class="thumb"><img src="../image/${images[i].trim()}" alt=""></div>
+              <div class="meta">
+                <h3>${titles[i].trim()}</h3>
+                <p>${variants[i]?.trim()} | ${prices[i]?.trim()}</p>
+              </div>
+            </div>
+          `;
+        }
+
+        let statusClass = "pending";
+        if(order.Confirmed==="yes") statusClass="yes";
+        else if(order.Confirmed==="no") statusClass="no";
+
+        container.innerHTML += `
+          <div class="order-card">
+            <div class="header">
+              <span>📅 ${new Date(order["Timestamp "]).toLocaleString()}</span>
+              <select class="confirmed-select ${statusClass}">
+                <option value="pending" ${order.Confirmed==="pending"?"selected":""}>pending</option>
+                <option value="yes" ${order.Confirmed==="yes"?"selected":""}>yes</option>
+                <option value="no" ${order.Confirmed==="no"?"selected":""}>no</option>
+              </select>
+            </div>
+            <p>👤 <b>${order.Name}</b> | 📞 ${order["Phone Number"]}</p>
+            <p>📍 ${order["District & Upazila"]} | ${order["Street Address"]}</p>
+            <p class="muted">🌍 Area: ${order.Area}</p>
+            <div class="products">${productsHTML}</div>
+            <p class="footer">💰 Total: ${order["Total Price"]}</p>
+          </div>
+        `;
+      });
+    }
+
+    document.getElementById("filterBtn").addEventListener("click", () => {
+      showAll = !showAll;
+      document.getElementById("filterBtn").textContent = showAll ? "Show Pending Only" : "Show All";
+      renderOrders();
+    });
+
+    loadOrders();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- JSON sheet 2 -->
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Sheet JSON Manager</title>
+  <link rel="icon" type="image/png" href="../logos/favicon.png">
+
+
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    h1 { color: #333; }
+    textarea { width: 100%; height: 250px; font-family: monospace; font-size: 14px; margin-bottom: 10px; }
+    button { padding: 10px 20px; margin-right: 10px; cursor: pointer; }
+    pre { background: #fff; padding: 10px; border: 1px solid #ccc; max-height: 400px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>Google Sheet JSON Manager</h1>
+
+  <p>Paste your product JSON array here:</p>
+  <textarea id="jsonInput" placeholder='Paste your array of products here'></textarea><br>
+
+  <button id="sendProducts">Send Products</button>
+  <button id="readProducts">Read Products</button>
+
+  <h2>Output / Feedback:</h2>
+  <pre id="output"></pre>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK5m0iaLvc3IbtfWzInTNW5leCJpVKlURnseUgswGQr7aWVo-SIIneKZwg7j8kNRRNYA/exec"; // replace with your Web App URL
+
+    // Send products
+    document.getElementById("sendProducts").addEventListener("click", () => {
+      const input = document.getElementById("jsonInput").value;
+
+      let products;
+      try {
+        products = JSON.parse(input);
+        if (!Array.isArray(products)) throw new Error("Input must be a JSON array of products");
+      } catch (err) {
+        document.getElementById("output").textContent = "❌ Invalid JSON: " + err.message;
+        return;
+      }
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(products)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          document.getElementById("output").textContent = data.message.join("\n");
+        } else {
+          document.getElementById("output").textContent = "❌ Error: " + (data.message || "Unknown error");
+        }
+      })
+      .catch(err => {
+        document.getElementById("output").textContent = "❌ Network/Error: " + err;
+      });
+    });
+
+    // Read products
+    document.getElementById("readProducts").addEventListener("click", () => {
+      fetch(SCRIPT_URL + "?action=read&path=Sheet1")
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            document.getElementById("output").textContent = JSON.stringify(data.data, null, 2);
+          } else {
+            document.getElementById("output").textContent = "❌ Error: " + (data.message || "Unknown error");
+          }
+        })
+        .catch(err => {
+          document.getElementById("output").textContent = "❌ Network/Error: " + err;
+        });
+    });
+  </script>
+</body>
+</html> -->

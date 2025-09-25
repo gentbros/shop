@@ -1,0 +1,226 @@
+/* Make header fixed */
+.header-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;          
+  z-index: 1000;        
+  background: #ffffff;     
+}
+
+/* Your existing header styles */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 9px 20px 4px;;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 10px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-container {
+    padding: 14px 12px 0px;
+    gap: 6px;
+  }
+}
+
+main {
+  padding-top: 70px; /* adjust based on your header height */
+}
+
+
+.shop-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap; /* Prevent name from breaking */
+  overflow: hidden; /* Hide overflow if text is too long */
+  text-overflow: ellipsis; /* Add ellipsis for hidden overflow */
+  max-width: 150px; /* Limit shop name width on smaller screens */
+  flex-shrink: 0; /* IMPORTANT: Prevent shop name from shrinking */
+  flex-grow: 0; /* Prevent shop name from growing */
+}
+
+
+
+
+/* Cart Icon Styles */
+.cart-icon {
+  position: relative;
+  font-size: 24px;
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: transform 0.3s;
+  flex-shrink: 0; /* Prevent shrinking */
+  flex-grow: 0;   /* Prevent growing */
+  text-decoration: none; /* Remove link underline */
+  display: inline-flex;
+  align-items: center;
+}
+
+.cart-icon:hover {
+  transform: scale(1.1);
+}
+
+.cart-count {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--accent-color);
+  color: var(--text-light);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Search Bar Styles - Responsive */
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1; /* Allows the search container to take up available space in the middle */
+  min-width: 180px; /* NEW: Minimum width for the search bar container */
+  max-width: 600px; /* Limits overall width on larger screens */
+  margin: 0 10px; /* Adds horizontal margin */
+  justify-content: center;
+}
+
+#searchInput {
+  flex: 1; /* Allows the input to take available space within its container */
+  padding: 8px 12px;
+  border: 1px solid var(--boder);
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 80px; /* NEW: Explicit minimum width for the input field */
+  max-width: 400px; /* NEW: Explicit maximum width for the input field */
+  box-sizing: border-box; /* Include padding and border in the element's total width */
+}
+
+#searchButton {
+  padding: 8px 15px;
+  background-color: var(--primary-color);
+  color: var(--text-light);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 14px;
+  white-space: nowrap; /* Prevents text from wrapping inside the button */
+  flex-shrink: 0; /* Prevent button from shrinking too much */
+  flex-grow: 0; /* Prevent button from growing */
+}
+
+#searchButton:hover {
+  background-color: var(--primary-hover-color);
+}
+
+/* --- Responsive Adjustments --- */
+/* Adjustments for smaller screens (up to 768px wide) */
+@media (max-width: 768px) {
+  /* .header-container {
+    padding: 10px;
+    gap: 8px; 
+  } */
+
+  .shop-name {
+    font-size: 20px;
+    max-width: 120px;
+    gap: 5px;
+  }
+
+  .cart-icon {
+    font-size: 20px; /* Slightly smaller cart icon */
+  }
+
+  .cart-count {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -8px;
+    right: -8px;
+  }
+
+  .search-container {
+    min-width: 150px; /* Adjust min-width for smaller screens */
+    margin: 0 8px; /* Adjust margin */
+  }
+
+  #searchInput {
+    padding: 7px 10px; /* Reduced padding for input */
+    font-size: 13px; /* Smaller font size for input */
+    min-width: 60px; /* Adjust min-width for input field */
+    max-width: 300px; /* Adjust max-width for input field */
+  }
+
+  #searchButton {
+    padding: 7px 12px; /* Reduced padding for button */
+    font-size: 13px; /* Smaller font size for button */
+  }
+}
+
+/* Specific adjustments for mobile phones (up to 480px wide) */
+@media (max-width: 480px) {
+
+  .shop-name {
+      font-size: 19px;
+      max-width: 105px;
+  }
+
+  .cart-icon {
+    font-size: 25px;
+  }
+
+  .cart-count {
+    width: 17px;
+    height: 17px;
+    font-size: 11px;
+    top: -6px;
+    right: -6px;
+    
+  }
+
+  .search-container {
+    min-width: 120px; /* Further adjust min-width for very small screens */
+    margin: 0 6px; /* Adjust margin */
+  }
+
+  #searchInput {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 40px; /* Smallest min-width for input field */
+    max-width: 200px; /* Smallest max-width for input field */
+  }
+
+  #searchButton {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+

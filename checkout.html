@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Gent Bros</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_W.png">
+
+  <!-- Your CSS files (unchanged) -->
+  <link rel="stylesheet" href="CSS/debug overlay.css"> 
+  <link rel="stylesheet" href="CSS/colors.css">
+  <link rel="stylesheet" href="CSS/debug overlay.css">  
+  <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Top Bar -->
+  <div onclick="window.location.href='index.html'" 
+       class="w-full fixed top-0 left-0 bg-[var(--primary-color)] text-[var(--text-light)] shadow-md cursor-pointer">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center">
+      <span class="text-lg font-semibold"><img src="logos/logo_w.svg" alt="Logo"></span>
+    </div>
+  </div>
+
+
+  <!-- Page Content -->
+  <div class="pt-16 flex items-center justify-center">
+    <div class="bg-white shadow-xl rounded-2xl w-full max-w-2xl p-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">Checkout</h2>
+
+      <form id="checkoutForm" class="space-y-5">
+        <!-- Full Name -->
+        <div>
+          <label class="block text-gray-700 mb-1 font-medium">Full Name</label>
+          <input id="fullName" type="text" placeholder="John Doe"
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
+        </div>
+
+        <!-- Phone -->
+        <div>
+          <label class="block text-gray-700 mb-1 font-medium">Phone Number</label>
+          <input id="phoneNumber" type="text" placeholder="+880 123 456 789"
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
+        </div>
+
+        <!-- District Selector -->
+        <div class="relative">
+          <label class="block text-gray-700 mb-1 font-medium">জেলা</label>
+          <button id="districtBtn" type="button"
+            class="w-full flex justify-between items-center px-4 py-2 border rounded-full bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <span id="districtText" class="text-gray-600">জেলা নির্বাচন করুন</span>
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div id="districtMenu" 
+               class="absolute z-10 mt-2 w-full max-h-60 overflow-y-auto bg-white shadow-lg rounded-xl hidden border">
+            <ul id="districtList" class="divide-y"></ul>
+          </div>
+        </div>
+
+        <!-- Upazila Selector -->
+        <div class="relative">
+          <label class="block text-gray-700 mb-1 font-medium">উপজেলা</label>
+          <button id="upazilaBtn" type="button" disabled
+            class="w-full flex justify-between items-center px-4 py-2 border rounded-full bg-gray-100 text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <span id="upazilaText">প্রথমে জেলা নির্বাচন করুন</span>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div id="upazilaMenu" 
+               class="absolute z-10 mt-2 w-full max-h-60 overflow-y-auto bg-white shadow-lg rounded-xl hidden border">
+            <ul id="upazilaList" class="divide-y"></ul>
+          </div>
+        </div>
+
+        <!-- Street Address -->
+        <div>
+          <label class="block text-gray-700 mb-1 font-medium">Street Address</label>
+          <input id="streetAddress" type="text" placeholder="123 Main St"
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-gray-700 mb-1 font-medium">Additional Notes (optional)</label>
+          <textarea id="additionalNotes" placeholder="Leave delivery instructions..." rows="3"
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+
+        <!-- Coupon -->
+        <div>
+          <label class="block text-gray-700 mb-1 font-medium">Coupon Code (optional)</label>
+          <input id="couponCode" type="text" placeholder="Enter coupon code"
+            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
+        </div>
+
+        <!-- Confirm Button -->
+        <div class="pt-4 ">
+          <button type="submit"
+            class="w-full bg-[var(--primary-color)] text-white font-semibold py-3 rounded-lg hover:bg-[var(--primary-hover-color)] transition">
+            Confirm Order
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+
+  <div id="loadingOverlay" class="hidden">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p>Processing your order...</p>
+  </div>
+</div>
+
+<style>
+#loadingOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+#loadingOverlay.hidden { display: none; }
+.loading-box {
+  background: #fff;
+  padding: 20px 40px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 5px solid #ddd;
+  border-top: 5px solid var(--primary-color);
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+
+
+
+
+
+<div id="successOverlay" class="hidden">
+  <div class="success-box">
+    <p>✅ Order Submitted Successfully!</p>
+  </div>
+</div>
+
+
+
+
+<style>
+#successOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+#successOverlay.hidden { display: none; }
+.success-box {
+  background: #fff;
+  padding: 20px 40px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+.success-box p {
+  font-size: 18px;
+  font-weight: 600;
+  color: green;
+}
+.ok-btn {
+  margin-top: 15px;
+  background: var(--primary-color);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 8px;
+}
+.ok-btn:hover {
+  background: var(--primary-hover-color);
+}
+</style>
+
+
+
+   <!-- Debug Overlay -->
+<!--    <div id="cartDebugPanel"></div> -->
+  
+
+   <script src="JS/cart-utils.js" defer></script>
+   <script src="JS/cart.js" defer></script>
+   <script src="JS/checkout.js" defer></script>
+
+</body>
+</html>
+
+
+
+ 
+
+

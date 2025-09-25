@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details - Gent Bros</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_W.png">
+
+
+  <!-- Your CSS files (unchanged) -->
+  <link rel="stylesheet" href="../CSS/colors.css">
+  <link rel="stylesheet" href="../CSS/top nav bar.css">
+  <link rel="stylesheet" href="../CSS/Footer.css">
+  <link rel="stylesheet" href="../CSS/product-page.css">
+  <link rel="stylesheet" href="../CSS/product card.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header -->
+  <div class="header-wrapper">
+    <div class="header-container">
+      <div onclick="window.location.href='Google_Sheet.html'">
+        <div class="shop-name"><img src="../logos/logo.svg" alt="Logo">Google</div>
+      </div>
+      <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search products...">
+        <button id="searchButton">Search</button>
+      </div>
+      <div class="cart-icon">
+        <a href="cart.html" class="cart-icon">
+          <i class="fas fa-shopping-cart"></i>
+          <span class="cart-count">0</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product content will be inserted here -->
+  <div class="product-page-container" id="productPageContainer">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading product details...</p>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+    <div id="footer-placeholder"></div>
+
+    <script>
+        fetch('../footer.html')
+            .then(response => {
+                // Check if the request was successful
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Get the placeholder element by its ID and insert the fetched HTML
+                const footerPlaceholder = document.getElementById('footer-placeholder');
+                if (footerPlaceholder) {
+                    footerPlaceholder.innerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem fetching the footer:', error);
+            });
+    </script>
+
+  <!-- Toast Popup -->
+  <div id="toast" class="toast"></div>
+
+  <script src="cart-utils.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
+
+      // Update cart count
+      if (typeof CartUtils !== 'undefined' && CartUtils.updateCartCount) {
+        CartUtils.updateCartCount();
+      } else {
+        // Fallback cart count update
+        try {
+          const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+          const cartCountEl = document.querySelector('.cart-count');
+          if (cartCountEl) {
+            cartCountEl.textContent = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+          }
+        } catch (e) {
+          console.error('Error updating cart count:', e);
+        }
+      }
+
+      if (!productId) {
+        window.location.href = 'Google_Sheet.html';
+        return;
+      }
+
+      // Get products from sessionStorage (stored by Google_Sheet.html)
+      function getProducts() {
+        try {
+          const cached = sessionStorage.getItem("productsData");
+          if (cached) {
+            return JSON.parse(cached);
+          }
+        } catch (e) {
+          console.warn("Invalid cache in sessionStorage", e);
+        }
+        
+        // If no data in sessionStorage, redirect to main Google Sheet page
+        window.location.href = 'Google_Sheet.html';
+        return null;
+      }
+
+      function formatBDT(value) {
+        if (value == null || value === '') return '৳0.00';
+        const n = Number(value) || 0;
+        return '৳' + n.toFixed(2);
+      }
+
+      function showToast(message) {
+        const toast = document.getElementById('toast');
+        if (toast) {
+          toast.textContent = message;
+          toast.classList.add('show');
+          
+          setTimeout(() => {
+            toast.classList.remove('show');
+          }, 3000);
+        }
+      }
+
+
+
+
+
+
+// <!-- Paste/replace this in Google_Sheet_product-page.html where addToCart is defined -->
+
+  // ... other code above ...
+
+  function addToCart(product, selectedVariant, quantity) {
+    try {
+      // read cart
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+      const color = selectedVariant ? (selectedVariant.colorName || null) : null;
+      const size  = selectedVariant ? (selectedVariant.size || null) : null;
+      const stock = selectedVariant ? Number(selectedVariant.stock) || 0 : 0;
+
+      if (stock <= 0) {
+        alert('Sorry — this variant is out of stock.');
+        return false;
+      }
+
+      // find exact same variant in cart
+      const existingIndex = cart.findIndex(item =>
+        String(item.id).trim() === String(product.id).trim()
+        && (item.color || null) === (color || null)
+        && (item.size  || null) === (size  || null)
+      );
+
+      if (existingIndex >= 0) {
+        // increase but cap at stock
+        const existing = cart[existingIndex];
+        const newQty = Math.min((existing.quantity || 0) + quantity, stock);
+        existing.quantity = newQty;
+        existing.stock = stock; // ensure stored stock is present
+        cart[existingIndex] = existing;
+      } else {
+        // push new item, include stock
+        cart.push({
+          id: product.id,
+          title: product.title,
+          color: color,
+          size: size,
+          quantity: Math.min(quantity, stock),
+          price: Number(product.price) || 0,
+          image: product.image || (product.images && product.images[0]) || '',
+          stock: stock
+        });
+      }
+
+      // Save updated cart
+      localStorage.setItem('cart', JSON.stringify(cart));
+
+      // Update cart count using your CartUtils if available, otherwise fallback
+      if (typeof CartUtils !== 'undefined' && CartUtils.updateCartCount) {
+        CartUtils.updateCartCount();
+      } else {
+        try {
+          const cartCountEl = document.querySelector('.cart-count');
+          if (cartCountEl) cartCountEl.textContent = cart.reduce((s, it) => s + (it.quantity || 0), 0);
+        } catch (e) { /* ignore */ }
+      }
+
+      return true;
+    } catch (e) {
+      console.error('Error adding to cart:', e);
+      return false;
+    }
+  }
+
+
+
+
+
+
+      function renderProductPage(product, allProducts) {
+        const container = document.getElementById('productPageContainer');
+        
+        if (!product) {
+          container.innerHTML = `
+            <div class="product-not-found">
+              <h2>Product Not Found</h2>
+              <p>The product you're looking for doesn't exist. (ID: ${productId})</p>
+              <a href="Google_Sheet.html" class="back-to-home">Back to Products</a>
+            </div>
+          `;
+          return;
+        }
+
+        // Calculate total stock
+        const totalStock = product.variants.reduce((sum, variant) => {
+          return sum + (Array.isArray(variant.sizes)
+            ? variant.sizes.reduce((s, sz) => s + (Number(sz?.stock) || 0), 0)
+            : 0);
+        }, 0);
+
+        // Show size section only if any variant has real sizes
+        const hasSizeSection = Array.isArray(product.variants) &&
+          product.variants.some(v =>
+            Array.isArray(v.sizes) &&
+            v.sizes.some(sz => sz && sz.size != null && String(sz.size).trim() !== '')
+          );
+
+        // Color options
+        const colorOptions = product.variants.map(variant => `
+          <div class="variant-option" data-color="${variant.colorName}">
+            <div class="color-swatch" style="background-color: ${variant.color}"></div>
+            <span class="color-name">${variant.colorName}</span>
+          </div>
+        `).join('');
+
+        // Features list
+        const featuresList = product.features ? `
+          <div class="product-features">
+            <h3>Key Features</h3>
+            <ul>
+              ${product.features.map(f => `<li>${f}</li>`).join('')}
+            </ul>
+          </div>
+        ` : '';
+
+        // Product images
+        const productImages = product.images || [product.image];
+
+        // Gallery HTML
+        const galleryHTML = `
+          <div class="product-gallery">
+            <div class="main-image-container">
+              <img src="../image/${productImages[0]}" alt="${product.title}" class="main-image" loading="lazy">
+              ${totalStock <= 0 ? '<div class="out-of-stock-badge">OUT OF STOCK</div>' : ''}
+              ${productImages.length > 1 ? `
+                <button class="gallery-nav prev-btn" aria-label="Previous image">❮</button>
+                <button class="gallery-nav next-btn" aria-label="Next image">❯</button>
+              ` : ''}
+            </div>
+            ${productImages.length > 1 ? `
+              <div class="thumbnail-container">
+                ${productImages.map((img, index) => `
+                  <img src="../image/${img}" alt="${product.title} - ${index + 1}" 
+                       class="thumbnail ${index === 0 ? 'active' : ''}" 
+                       data-index="${index}" loading="lazy">
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+
+        // Media gallery
+        const mediaGallery = product.mediaGallery && product.mediaGallery.length > 0 ? `
+          <div class="media-gallery">
+            <h3>More Photos & Videos</h3>
+            <div class="media-thumbnails">
+              ${product.mediaGallery.map((item, i) => `
+                <div class="media-thumb" data-index="${i}" data-type="${item.type}" data-src="${item.src}">
+                  ${item.type === 'image' 
+                    ? `<img src="../image/${item.src}" alt="Media ${i+1}">`
+                    : `<video src="../video/${item.src}" muted></video>`}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : '';
+
+        // Full HTML
+        const productHTML = `
+          <div class="product-details">
+            ${galleryHTML}
+            <div class="product-info">
+              <h1 class="product-title">${product.title}</h1>
+              <div class="product-rating">
+                ${product.rating} <span class="review-count">(${product.reviews} reviews)</span>
+              </div>
+              <div class="price-container">
+                <span class="current-price">${formatBDT(product.price)}</span>
+                <span class="original-price">${formatBDT(product.originalPrice)}</span>
+                <span class="discount-percentage">${((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0)}% OFF</span>
+              </div>
+              ${product.variants && product.variants.length > 0 ? `
+                <div class="color-selection" style="${product.variants.length === 1 ? 'display:none;' : ''}">
+                  <h3>Color:</h3>
+                  <div class="color-options">${colorOptions}</div>
+                </div>
+              ` : ''}
+              ${hasSizeSection ? `
+                <div class="size-selection">
+                  <h3>Size:</h3>
+                  <div class="size-options">Select a color first</div>
+                </div>
+              ` : ''}
+              <div class="stock-status"></div>
+              <div class="product-actions">
+                <div class="quantity-selector">
+                  <button class="quantity-btn minus">-</button>
+                  <input type="number" value="1" min="1" max="1" class="quantity-input" disabled>
+                  <button class="quantity-btn plus">+</button>
+                </div>
+                <button class="add-to-cart-btn" disabled>
+                  ${hasSizeSection ? 'Select color & size' : 'Select color'}
+                </button>
+              </div>
+              <div class="product-description">
+                <h3>Description</h3>
+                <p>${product.description}</p>
+              </div>
+              ${featuresList}
+              ${mediaGallery}
+            </div>
+          </div>
+
+          <div class="product-recommendations">
+            <h2>You May Also Like</h2>
+            <div class="recommendations-container" id="recommendationsContainer"></div>
+          </div>
+        `;
+
+        container.innerHTML = productHTML;
+
+        // Initialize galleries
+        if (productImages.length > 1) initImageGallery(productImages);
+        if (product.mediaGallery && product.mediaGallery.length > 0) initMediaGallery(product.mediaGallery);
+
+        loadRecommendations(product.id, allProducts);
+
+        // --- VARIANT & CART LOGIC ---
+        let selectedVariant = null;
+        const quantityInput = document.querySelector('.quantity-input');
+        const addToCartBtn = document.querySelector('.add-to-cart-btn');
+        const stockStatus = document.querySelector('.stock-status');
+        const sizeSectionEl = document.querySelector('.size-selection');
+        const sizeContainer = sizeSectionEl ? sizeSectionEl.querySelector('.size-options') : null;
+        const colorOptionsEls = document.querySelectorAll('.variant-option');
+
+        function selectColor(colorName) {
+          colorOptionsEls.forEach(opt => opt.dataset.color === colorName ? opt.classList.add('active') : opt.classList.remove('active'));
+          const variant = product.variants.find(v => v.colorName === colorName);
+          if (!variant) return;
+
+          const variantHasRealSizes = Array.isArray(variant.sizes) &&
+            variant.sizes.some(sz => sz && sz.size != null && String(sz.size).trim() !== '');
+
+          if (variantHasRealSizes && sizeContainer) {
+            const visibleSizes = variant.sizes.filter(sz => sz && sz.size != null && String(sz.size).trim() !== '');
+            sizeContainer.innerHTML = visibleSizes.map(s => `
+              <div class="size-option ${s.stock <= 0 ? 'out-of-stock' : ''}" 
+                   data-size="${String(s.size).trim()}" data-stock="${s.stock}" data-color="${colorName}">
+                ${String(s.size).trim()} ${s.stock <= 0 ? '(Out)' : ''}
+              </div>
+            `).join('');
+
+            document.querySelectorAll('.size-option').forEach(sizeEl => {
+              sizeEl.addEventListener('click', function() {
+                if (this.classList.contains('out-of-stock')) return;
+                document.querySelectorAll('.size-option').forEach(s => s.classList.remove('active'));
+                this.classList.add('active');
+                selectedVariant = {
+                  colorName: this.dataset.color,
+                  size: this.dataset.size,
+                  stock: parseInt(this.dataset.stock, 10)
+                };
+                updateVariantSelection();
+              });
+            });
+
+            if (visibleSizes.length === 1) {
+              const singleSizeEl = sizeContainer.querySelector('.size-option');
+              if (singleSizeEl && !singleSizeEl.classList.contains('out-of-stock')) singleSizeEl.click();
+            }
+          } else {
+            if (sizeSectionEl) sizeSectionEl.remove();
+            const totalStockForVariant = Array.isArray(variant.sizes)
+              ? variant.sizes.reduce((sum, sz) => sum + (Number(sz?.stock) || 0), 0)
+              : 0;
+            selectedVariant = { colorName, size: null, stock: totalStockForVariant };
+            updateVariantSelection();
+          }
+        }
+
+        colorOptionsEls.forEach(option => option.addEventListener('click', () => selectColor(option.dataset.color)));
+        if (product.variants.length === 1) selectColor(product.variants[0].colorName);
+
+        function updateVariantSelection() {
+          if (!selectedVariant) return;
+          stockStatus.innerHTML = '';
+          quantityInput.disabled = false;
+          quantityInput.max = selectedVariant.stock;
+          quantityInput.value = 1;
+          addToCartBtn.disabled = false;
+          addToCartBtn.textContent = 'Add to Cart';
+        }
+
+        // Quantity controls
+        document.querySelector('.quantity-btn.minus').addEventListener('click', () => {
+          if (quantityInput.disabled) return;
+          quantityInput.value = Math.max(1, parseInt(quantityInput.value) - 1);
+        });
+
+        document.querySelector('.quantity-btn.plus').addEventListener('click', () => {
+          if (quantityInput.disabled) return;
+          const max = parseInt(quantityInput.max);
+          if (parseInt(quantityInput.value) < max) quantityInput.value = parseInt(quantityInput.value) + 1;
+          else alert(`You cannot add more of this item. Stock limit reached.`);
+        });
+
+        quantityInput.addEventListener('change', function () {
+          if (parseInt(this.value) > parseInt(this.max)) {
+            this.value = this.max;
+            alert(`Only ${this.max} available in stock!`);
+          }
+          if (parseInt(this.value) < 1) this.value = 1;
+        });
+
+        // Add to cart functionality
+        addToCartBtn.addEventListener('click', function () {
+          if (!selectedVariant || this.disabled) return;
+
+          const quantity = parseInt(quantityInput.value, 10);
+          if (quantity > selectedVariant.stock) {
+            let detailMsg = selectedVariant.colorName || '';
+            if (selectedVariant.size) detailMsg += detailMsg ? `, Size ${selectedVariant.size}` : `Size ${selectedVariant.size}`;
+            alert(`Sorry, you cannot add more of this product${detailMsg ? ` in ${detailMsg}` : ''}.`);
+            return;
+          }
+
+          // Add to cart
+          const success = addToCart(product, selectedVariant, quantity);
+
+          if (success) {
+            // Show success message
+            const details = [
+              selectedVariant.colorName,
+              selectedVariant.size ? `Size ${selectedVariant.size}` : null
+            ].filter(Boolean).join(', ');
+
+            showToast(`${quantity} ${product.title}${details ? ` (${details})` : ''} added to cart!`);
+
+            // Prevent double clicks for 1 second
+            this.disabled = true;
+            setTimeout(() => {
+              this.disabled = false;
+            }, 1000);
+          } else {
+            showToast('Error adding product to cart!');
+          }
+        });
+
+        // --- GALLERY FUNCTIONS ---
+        function initImageGallery(images) {
+          const mainImage = document.querySelector('.main-image');
+          const thumbnails = document.querySelectorAll('.thumbnail');
+          const prevBtn = document.querySelector('.prev-btn');
+          const nextBtn = document.querySelector('.next-btn');
+          let currentIndex = 0;
+
+          function updateMainImage(index) {
+            mainImage.src = `../image/${images[index]}`;
+            thumbnails.forEach(thumb => thumb.classList.remove('active'));
+            thumbnails[index].classList.add('active');
+            currentIndex = index;
+          }
+
+          thumbnails.forEach(thumb => thumb.addEventListener('click', () => updateMainImage(parseInt(thumb.dataset.index))));
+          prevBtn.addEventListener('click', () => updateMainImage((currentIndex - 1 + images.length) % images.length));
+          nextBtn.addEventListener('click', () => updateMainImage((currentIndex + 1) % images.length));
+          document.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') prevBtn.click(); else if (e.key === 'ArrowRight') nextBtn.click(); });
+        }
+
+        function initMediaGallery(mediaItems) {
+          const thumbs = document.querySelectorAll('.media-thumb');
+          let currentIndex = 0;
+
+          const modal = document.createElement('div');
+          modal.classList.add('media-modal');
+          modal.innerHTML = `<div class="media-content"></div><button class="close-btn">✖</button><button class="prev-btn">❮</button><button class="next-btn">❯</button>`;
+          document.body.appendChild(modal);
+
+          const content = modal.querySelector('.media-content');
+          const closeBtn = modal.querySelector('.close-btn');
+          const prevBtn = modal.querySelector('.prev-btn');
+          const nextBtn = modal.querySelector('.next-btn');
+
+          function showMedia(index) {
+            const item = mediaItems[index];
+            currentIndex = index;
+            content.innerHTML = item.type === 'image'
+              ? `<img src="../image/${item.src}" alt="media ${index + 1}">`
+              : `<video src="../video/${item.src}" controls autoplay></video>`;
+          }
+
+          thumbs.forEach(thumb => {
+            thumb.addEventListener('click', () => {
+              currentIndex = parseInt(thumb.dataset.index);
+              showMedia(currentIndex);
+              modal.classList.add('active');
+            });
+          });
+
+          closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+          prevBtn.addEventListener('click', () => showMedia((currentIndex - 1 + mediaItems.length) % mediaItems.length));
+          nextBtn.addEventListener('click', () => showMedia((currentIndex + 1) % mediaItems.length));
+        }
+
+        // --- RECOMMENDATIONS ---
+        function loadRecommendations(currentProductId, allProducts) {
+          const filteredProducts = allProducts.filter(p => p.id !== currentProductId);
+          const shuffled = [...filteredProducts].sort(() => 0.5 - Math.random());
+          const recommendedProducts = shuffled.slice(0, 4);
+          renderRecommendations(recommendedProducts);
+        }
+
+        function renderRecommendations(products) {
+          const container = document.getElementById('recommendationsContainer');
+          if (products.length === 0) {
+            container.innerHTML = '<p>No recommendations available at this time.</p>';
+            return;
+          }
+
+          container.innerHTML = products.map(product => {
+            const totalStock = product.variants.reduce((sum, variant) => {
+              return sum + (Array.isArray(variant.sizes)
+                ? variant.sizes.reduce((s, sz) => s + (Number(sz?.stock) || 0), 0)
+                : 0);
+            }, 0);
+
+            const discountPercentage = ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0);
+            const colorOptions = product.variants.map(v => `<div class="color-option" style="background-color: ${v.color}"></div>`).join('');
+
+            return `
+              <div class="product-card" data-stock="${totalStock}">
+                <a href="Google_Sheet_product-page.html?id=${product.id}" class="product-link">
+                  ${discountPercentage > 0 ? `<div class="discount-badge">${discountPercentage}% OFF</div>` : ''}
+                  ${totalStock <= 0 ? '<div class="out-of-stock-badge">OUT OF STOCK</div>' : ''}
+                  <img src="../image/${product.image}" alt="${product.title}" class="product-img" loading="lazy">
+                  <div class="product-info">
+                    <div class="product-title">${product.title}</div>
+                    <div class="product-review">${product.rating} <span class="review-count">(${product.reviews} reviews)</span></div>
+                    <div class="color-availability">${colorOptions}</div>
+                    <div class="product-price">
+                      <span class="original-price">${formatBDT(product.originalPrice)}</span>
+                      <span class="current-price">${formatBDT(product.price)}</span>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Load product data from sessionStorage and render the page
+      const products = getProducts();
+      if (products) {
+        console.log("Looking for product ID:", productId);
+
+        const product = products.find(p => String(p.id).trim() === String(productId).trim());
+        console.log("Matched product:", product);
+
+        if (!product) {
+          document.getElementById('productPageContainer').innerHTML = `
+            <div class="product-not-found">
+              <h2>Product Not Found</h2>
+              <p>The product you're looking for doesn't exist. (ID: ${productId})</p>
+              <a href="Google_Sheet.html" class="back-to-home">Back to Products</a>
+            </div>
+          `;
+          return;
+        }
+
+        renderProductPage(product, products);
+      }
+    });
+  </script>
+</body>
+</html>
+
+

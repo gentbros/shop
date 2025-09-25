@@ -1,0 +1,26 @@
+#cartDebugPanel {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 300px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    z-index: 9999;
+    font-family: monospace;
+}
+
+#clearCartBtn {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    overflow-y: auto;
+    padding: 5px;
+    border-radius: 6px;
+    z-index: 9999;
+    font-family: monospace;
+}

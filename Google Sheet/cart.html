@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Gent Bros</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_W.png">
+
+  <!-- Your CSS files (unchanged) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../CSS/colors.css">
+  <link rel="stylesheet" href="../CSS/debug overlay.css">  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 font-sans">
+
+  <!-- Top Bar -->
+  <header class="text-white py-4 px-6" style="background: var(--primary-color)">
+
+  <div onclick="window.location.href='index.html'">
+    <div>
+      <span class="text-lg font-semibold"><img src="../logos/logo_w.svg" alt="Logo"></span>
+    </div>
+  </div>
+
+  </header>
+
+  <!-- Cart Layout -->
+  <main class="max-w-6xl mx-auto py-12 px-4 lg:px-8 grid lg:grid-cols-3 gap-10">
+    
+    <!-- Cart Items -->
+    <div class="lg:col-span-2 space-y-6">
+      <h2 class="text-3xl font-bold text-gray-900 mb-4">Your Cart</h2>
+      <div id="cartContainer" class="space-y-6"></div>
+    </div>
+    
+    <!-- Order Summary -->
+    <div>
+      <div class="bg-white rounded-2xl shadow-lg p-8 sticky top-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+        
+        <div class="flex justify-between mb-3 text-gray-600">
+          <span>Subtotal</span>
+          <span id="subtotal">৳0.00</span>
+        </div>
+        <div class="flex justify-between mb-3 text-gray-600">
+          <span>Shipping</span>
+          <span id="shipping">৳0.00</span>
+        </div>
+        <div class="flex justify-between border-t pt-4 text-lg font-semibold text-gray-900">
+          <span>Total</span>
+          <span id="cartTotal">৳0.00</span>
+        </div>
+        
+        <button class="mt-6 w-full text-white py-3 rounded-xl font-medium" 
+                style="background: var(--primary-color)"
+                onmouseover="this.style.background= 'var(--primary-hover-color)'"
+                onmouseout="this.style.background= 'var(--primary-color)'"
+                onclick="window.location.href='../checkout.html'">
+          Proceed to Checkout
+        </button>
+
+        
+    <div class="mt-6">
+      <h3 class="text-sm font-medium text-gray-700 mb-2">Delivery</h3>
+    <label class="flex items-center space-x-2">
+      <input type="checkbox" id="outsideDelivery" class="text-black">
+      <span id="outsideLabel" class="text-red-600 font-semibold">Outside City</span>
+    </label>
+    <p id="insideLabel" class="text-xs text-gray-500 mt-1"></p>
+    
+    </div>
+
+
+
+        <p class="text-sm text-gray-500 mt-4 text-center">Secure payment powered by Stripe</p>
+      </div>
+    </div>
+  </main>
+
+
+  <!-- Debug Overlay -->
+   <!-- <button id="clearCartBtn">Clear Cart (Test)</button>
+   <div id="cartDebugPanel"></div> -->
+
+
+   <script src="../JS/cart-utils.js" defer></script>
+   <script src="cart.js" defer></script>
+</body>
+</html>
+

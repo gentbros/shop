@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gent Bros</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_W.png">
+
+  <!-- Your CSS files (unchanged) -->
+  <link rel="stylesheet" href="../CSS/colors.css"> 
+  <link rel="stylesheet" href="../CSS/debug overlay.css"> 
+  <link rel="stylesheet" href="../CSS/product card.css">
+  <link rel="stylesheet" href="../CSS/cover photo.css">
+  <link rel="stylesheet" href="../CSS/filter.css">
+  <link rel="stylesheet" href="../CSS/top nav bar.css">
+  <link rel="stylesheet" href="../CSS/products container.css">
+  <link rel="stylesheet" href="../CSS/Footer.css">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: none;
+      transform: translate(-50%, -120%);
+      white-space: nowrap;
+    }
+  </style>
+
+  <!-- Loading screen loader (unchanged) -->
+  <script>
+    (function(){
+      window.loadingScreenReady = new Promise((resolve) => {
+        fetch('loading-screen.html', {cache: 'no-store'})
+          .then(r => {
+            if (!r.ok) throw new Error('Could not load loading-screen.html');
+            return r.text();
+          })
+          .then(html => {
+            function inject() {
+              document.body.insertAdjacentHTML('afterbegin', html);
+              const overlay = document.getElementById('loading-overlay');
+              window.showLoading = function() {
+                if (overlay) {
+                  overlay.style.display = 'flex';
+                  overlay.classList.remove('ls-hidden');
+                  overlay.classList.add('ls-visible');
+                }
+              };
+              window.hideLoading = function() {
+                if (overlay) {
+                  overlay.classList.remove('ls-visible');
+                  overlay.classList.add('ls-hidden');
+                  const dur = parseFloat(getComputedStyle(overlay).getPropertyValue('--ls-fade-duration') || 0.45) * 1000;
+                  setTimeout(()=> overlay.style.display = 'none', dur + 50);
+                }
+              };
+              if (overlay) overlay.style.display = 'none';
+              resolve();
+            }
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', inject, {once:true});
+            } else {
+              inject();
+            }
+          })
+          .catch(err => {
+            console.warn('Loading screen failed to load:', err);
+            window.showLoading = window.hideLoading = function(){};
+            resolve();
+          });
+      });
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header-container">
+    <div class="shop-name" onclick="window.history.back()"><img src="../logos/logo.svg" alt="Logo">Google</div>
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search products...">
+      <button id="searchButton">Search</button>
+    </div>
+    <a href="../cart.html" class="cart-icon">
+      <i class="fas fa-shopping-cart"></i>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
+  </div>
+
+  <!-- Cover Photo Carousel -->
+  <div class="cover-carousel-container">
+    <div class="cover-carousel">
+      <div class="carousel-track" id="carouselTrack">
+        <div class="carousel-slide">
+          <a href="promo1.html"><img src="../image/cover 1.jpg" alt="Promotion 1" loading="lazy"></a>
+        </div>
+        <div class="carousel-slide">
+          <a href="promo2.html"><img src="../image/cover 2.jpg" alt="Promotion 2" loading="lazy"></a>
+        </div>
+        <div class="carousel-slide">
+          <a href="promo3.html"><img src="../image/cover 3.jpg" alt="Promotion 3" loading="lazy"></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Buttons -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-filter="all">All Products</button>
+    <button class="filter-btn" data-filter="anime">Anime</button>
+    <button class="filter-btn" data-filter="Demon Slayer">Demon Slayer</button>
+    <button class="filter-btn" data-filter="drop-shoulder">Drop Shoulder</button>
+  </div>
+
+  <!-- Products container -->
+  <div id="productsWrapper">
+    <div id="status" style="padding:0px;color:#666; font-size: 1px;">Loading products…</div>
+    <div id="productsContainer" class="products-container"></div>
+  </div>
+
+    <!-- footer -->
+    <div id="footer-placeholder"></div>
+
+    <script>
+        fetch('../footer.html')
+            .then(response => {
+                // Check if the request was successful
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Get the placeholder element by its ID and insert the fetched HTML
+                const footerPlaceholder = document.getElementById('footer-placeholder');
+                if (footerPlaceholder) {
+                    footerPlaceholder.innerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem fetching the footer:', error);
+            });
+    </script>
+
+
+  <div id="tooltip" class="tooltip"></div>
+
+  <!-- Your existing scripts -->
+  <script src="../JS/cover photo.js" defer></script>
+  <script src="../JS/filter.js" defer></script>
+  <script src="../JS/Search ber.js" defer></script>
+  <script src="../JS/cart-utils.js" defer></script>
+
+  <!-- Product gallery script with sessionStorage logic -->
+  <script>
+  (function () {
+    // ---------- CONFIG ----------
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyK5m0iaLvc3IbtfWzInTNW5leCJpVKlURnseUgswGQr7aWVo-SIIneKZwg7j8kNRRNYA/exec';
+    const SHEET_PATH  = 'Sheet1';
+    const FETCH_URL   = `${SCRIPT_URL}?action=read&path=${encodeURIComponent(SHEET_PATH)}`;
+    const STORAGE_KEY = 'productsData'; // session-only, cleared on reload
+    // ----------------------------
+
+    const statusEl = document.getElementById('status');
+    const productsContainer = document.getElementById('productsContainer');
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const filterBar = document.getElementById('filterBar');
+    const tooltip = document.getElementById('tooltip');
+    const cartCountEl = document.getElementById('cartCount');
+
+    // If this page load is a reload, remove session storage so refresh always fetches fresh JSON
+    try {
+      const nav = performance.getEntriesByType && performance.getEntriesByType('navigation') && performance.getEntriesByType('navigation')[0];
+      const isReload = nav ? (nav.type === 'reload') : (performance.navigation && performance.navigation.type === 1);
+      if (isReload) {
+        sessionStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (e) {
+      // ignore if navigator timing not available
+    }
+
+    function refreshCartCount() {
+      if (window.getCartCount && typeof window.getCartCount === 'function') {
+        cartCountEl.textContent = window.getCartCount();
+      } else {
+        try {
+          const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+          cartCountEl.textContent = cart.length || 0;
+        } catch (e) {
+          cartCountEl.textContent = 0;
+        }
+      }
+    }
+    refreshCartCount();
+
+    function safeArray(v) { return Array.isArray(v) ? v : (v ? [v] : []); }
+    function formatBDT(value) {
+      if (value == null || value === '') return '৳0.00';
+      const n = Number(value) || 0;
+      return '৳' + n.toFixed(2);
+    }
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/[&<>"']/g, function (m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    function buildCard(product) {
+      const variants = safeArray(product.variants);
+      const totalStock = variants.reduce((sum, variant) => {
+        if (Array.isArray(variant.sizes)) {
+          return sum + variant.sizes.reduce((s, sz) => s + (Number(sz?.stock) || 0), 0);
+        }
+        return sum + (Number(variant?.stock) || 0);
+      }, 0);
+
+      const cats = Array.isArray(product.categories) ? product.categories.join(' ') : (product.categories || '');
+      const imagesArr = safeArray(product.image);
+      const mainImgName = imagesArr[0] || product.image || '';
+      const resolvedImg = mainImgName && /^(https?:)?\/\//i.test(mainImgName) ? mainImgName : (mainImgName ? `../image/${mainImgName}` : '');
+
+      const original = Number(product.originalPrice) || 0;
+      const current = Number(product.price) || 0;
+
+      let discountHtml = '';
+      if (original > current && original > 0) {
+        const pct = Math.round(((original - current) / original) * 100);
+        discountHtml = `<div class="discount-badge">${pct}% OFF</div>`;
+      }
+      const outOfStockHtml = totalStock <= 0 ? `<div class="out-of-stock-badge">OUT OF STOCK</div>` : '';
+
+      const hasColorVariants = variants.some(v => v.colorName || v.color);
+      let colorDotsHtml = '';
+      if (hasColorVariants) {
+        colorDotsHtml = `<div class="color-availability">` + variants.map(v => {
+          const colorStyle = v.color ? `background:${v.color};` : '';
+          const stock = Number(v.stock) || (Array.isArray(v.sizes) ? v.sizes.reduce((s, sz) => s + (Number(sz?.stock) || 0), 0) : 0);
+          const safeName = escapeHtml(v.colorName || '');
+          const outClass = stock <= 0 ? ' out-of-stock' : '';
+          return `<div class="color-option${outClass}" data-color-name="${safeName}" data-stock="${stock}" title="${safeName}" style="${colorStyle}"></div>`;
+        }).join('') + `</div>`;
+      }
+
+      const imgTag = resolvedImg ? `<img class="product-img" loading="lazy" src="${resolvedImg}" alt="${escapeHtml(product.title || '')}">`
+        : `<div style="width:100%;height:230px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#bbb">No image</div>`;
+
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.dataset.stock = totalStock;
+      card.dataset.categories = cats.toLowerCase();
+
+      card.innerHTML = `
+        <a href="Google_Sheet_product-page.html?id=${encodeURIComponent(product.id || '')}" class="product-link" style="text-decoration:none;color:inherit;display:block;">
+          ${discountHtml}
+          ${outOfStockHtml}
+          ${imgTag}
+          <div class="product-info">
+            <div class="product-title">${escapeHtml(product.title || '')}</div>
+            <div class="product-review">${escapeHtml(product.rating || '-') } <span class="review-count">(${escapeHtml(product.reviews || 0)} reviews)</span></div>
+            ${colorDotsHtml}
+            <div class="product-price">
+              ${original > 0 ? `<span class="original-price">${formatBDT(original)}</span>` : ''}
+              <span class="current-price">${formatBDT(current)}</span>
+            </div>
+          </div>
+        </a>
+      `;
+
+      if (hasColorVariants) {
+        const colorEls = card.querySelectorAll('.color-option');
+        colorEls.forEach(el => {
+          el.addEventListener('mouseenter', (ev) => {
+            const name = el.dataset.colorName || '';
+            const stock = el.dataset.stock || '0';
+            tooltip.textContent = `${name} — ${stock} in stock`;
+            tooltip.style.display = 'block';
+            positionTooltip(ev);
+          });
+          el.addEventListener('mousemove', (ev) => positionTooltip(ev));
+          el.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+
+          el.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const colorName = el.dataset.colorName;
+            const variant = variants.find(v => (v.colorName || '').toLowerCase() === (colorName || '').toLowerCase());
+            if (variant && Array.isArray(variant.images) && variant.images.length) {
+              const img = card.querySelector('.product-img');
+              img.src = /^(https?:)?\/\//i.test(variant.images[0]) ? variant.images[0] : `image/${variant.images[0]}`;
+            }
+          });
+        });
+      }
+
+      return card;
+    }
+
+    function positionTooltip(ev) {
+      const x = ev.clientX;
+      const y = ev.clientY;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = (y - 12) + 'px';
+    }
+
+    function saveToSession(products) {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      } catch (e) {
+        console.warn('sessionStorage write failed:', e);
+      }
+    }
+
+    function readFromSession() {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        console.warn('sessionStorage read failed or corrupt:', e);
+        return null;
+      }
+    }
+
+    let allProducts = [];
+
+    async function fetchAndStore() {
+      if (window.showLoading) window.showLoading();
+      statusEl.textContent = 'Loading products…';
+      try {
+        const res = await fetch(FETCH_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('Network error ' + res.status);
+        const raw = await res.json();
+        const products = (raw && raw.status === 'success' && Array.isArray(raw.data)) ? raw.data : (Array.isArray(raw) ? raw : (raw.data || []));
+        if (!Array.isArray(products) || products.length === 0) {
+          statusEl.textContent = 'No products found.';
+          productsContainer.innerHTML = '';
+          if (window.hideLoading) window.hideLoading();
+          return;
+        }
+        allProducts = products;
+        saveToSession(products);
+        renderProducts(products);
+        statusEl.textContent = `Loaded ${products.length} product(s).`;
+        if (window.hideLoading) window.hideLoading();
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error loading products: ' + (err.message || err);
+        if (window.hideLoading) window.hideLoading();
+      }
+    }
+
+    function renderProducts(items) {
+      productsContainer.innerHTML = '';
+      items.forEach(p => {
+        const card = buildCard(p);
+        productsContainer.appendChild(card);
+      });
+    }
+
+    // Initialization:
+    (function init() {
+      // If sessionStorage contains products, render immediately (fast navigation)
+      const cached = readFromSession();
+      if (cached && Array.isArray(cached) && cached.length > 0) {
+        allProducts = cached;
+        renderProducts(cached);
+        statusEl.textContent = `Loaded ${cached.length} product(s) (from session).`;
+        // hide loading immediately if present
+        if (window.hideLoading) window.hideLoading();
+        // Do NOT fetch again now — we intentionally use stored data until user refreshes (per your spec).
+        // NOTE: if you want a background fetch to check for updates, we could do that but we didn't per spec.
+        return;
+      }
+
+      // Otherwise no cached data: wait for loading screen then fetch+store
+      if (window.loadingScreenReady && typeof window.loadingScreenReady.then === 'function') {
+        window.loadingScreenReady.then(fetchAndStore);
+      } else {
+        fetchAndStore();
+      }
+    })();
+
+    // Filtering & search
+    filterBar.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.filter-btn');
+      if (!btn) return;
+      Array.from(filterBar.querySelectorAll('.filter-btn')).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter(btn.dataset.filter || 'all', searchInput.value);
+    });
+    searchButton.addEventListener('click', () => applyFilter(getActiveFilter(), searchInput.value));
+    searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFilter(getActiveFilter(), searchInput.value); });
+
+    function getActiveFilter() {
+      const active = filterBar.querySelector('.filter-btn.active');
+      return active ? (active.dataset.filter || 'all') : 'all';
+    }
+
+    function applyFilter(filter, searchTerm) {
+      const term = (searchTerm || '').trim().toLowerCase();
+      const filtered = allProducts.filter(p => {
+        let catMatch = true;
+        if (filter && filter !== 'all') {
+          const cats = (Array.isArray(p.categories) ? p.categories : (p.categories ? [p.categories] : [])).map(c => String(c).toLowerCase());
+          catMatch = cats.includes(filter.toLowerCase());
+        }
+        let searchMatch = true;
+        if (term) {
+          const hay = (p.title + ' ' + (p.description || '') + ' ' + (Array.isArray(p.categories) ? p.categories.join(' ') : (p.categories || ''))).toLowerCase();
+          searchMatch = hay.includes(term);
+        }
+        return catMatch && searchMatch;
+      });
+      renderProducts(filtered);
+    }
+
+    // Expose refresh to manually re-fetch fresh JSON and overwrite session storage
+    window.refreshProductsFromSheet = async function() {
+      await fetchAndStore();
+    };
+
+    window.addEventListener('mouseout', (ev) => {
+      if (!ev.relatedTarget) tooltip.style.display = 'none';
+    });
+
+  })();
+  </script>
+
+</body>
+</html>
+

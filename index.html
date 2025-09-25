@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gent Bros</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_W.png">
+
+  <!-- Your CSS files (unchanged) -->
+  <link rel="stylesheet" href="CSS/colors.css"> 
+  <link rel="stylesheet" href="CSS/debug overlay.css"> 
+  <link rel="stylesheet" href="CSS/product card.css">
+  <link rel="stylesheet" href="CSS/cover photo.css">
+  <link rel="stylesheet" href="CSS/filter.css">
+  <link rel="stylesheet" href="CSS/top nav bar.css">
+  <link rel="stylesheet" href="CSS/products container.css">
+  <link rel="stylesheet" href="CSS/Footer.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+</head>
+<body>
+
+  <!-- Reuse your header from main page -->
+  <div class="header-container">
+    <div class="shop-name" onclick="window.history.back()"><img src="logos/logo.svg" alt="Logo"> Shop</div>
+
+
+    
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search products...">
+      <button id="searchButton">Search</button>
+    </div>
+    
+    <a href="cart.html" class="cart-icon">
+      <i class="fas fa-shopping-cart"></i>
+      <span class="cart-count">0</span>
+    </a>
+
+  </div>
+
+
+  <!-- Cover Photo Carousel -->
+  <div class="cover-carousel-container">
+    <div class="cover-carousel">
+      <div class="carousel-track" id="carouselTrack">
+        <div class="carousel-slide">
+          <a href="promo1.html">
+            <img src="image/cover 1.jpg" 
+                 alt="Promotion 1"
+                 loading="lazy">
+          </a>
+        </div>
+        <div class="carousel-slide">
+          <a href="promo2.html">
+            <img src="image/cover 2.jpg" 
+                 alt="Promotion 2"
+                 loading="lazy">
+          </a>
+        </div>
+        <div class="carousel-slide">
+          <a href="promo3.html">
+            <img src="image/cover 3.jpg" 
+                 alt="Promotion 3"
+                 loading="lazy">
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Buttons -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all">All Products</button>
+    <button class="filter-btn" data-filter="anime">Anime</button>
+    <button class="filter-btn" data-filter="t-shirt">T-shirt</button>
+    <button class="filter-btn" data-filter="drop-shoulder">Drop Shoulder</button>
+
+  </div>
+
+  <div class="products-container" id="productsContainer">
+    <!-- Products will be inserted here by JavaScript -->
+  </div>
+
+
+
+<!-- Footer Section -->
+    <div id="footer-placeholder"></div>
+
+    <script>
+        fetch('footer.html')
+            .then(response => {
+                // Check if the request was successful
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Get the placeholder element by its ID and insert the fetched HTML
+                const footerPlaceholder = document.getElementById('footer-placeholder');
+                if (footerPlaceholder) {
+                    footerPlaceholder.innerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem fetching the footer:', error);
+            });
+    </script>
+
+
+
+
+
+
+  <script src="JS/filter.js"></script>
+  <script src="JS/cover photo.js"></script>
+  <script src="JS/Search ber.js"></script>
+  <script src="JS/product card.js"></script>
+   <script src="JS/cart-utils.js" defer></script>
+
+
+   <!-- Debug Overlay -->
+<!--    <button id="clearCartBtn">Clear Cart (Test)</button>
+   <div id="cartDebugPanel"></div>
+ -->
+
+
+</body>
+</html>
+
+
+

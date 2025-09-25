@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Product CMS — Client-side Editor</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_B.png">
+ 
+  <style>
+
+    html, body { height: 100%; background: linear-gradient(180deg,#071028 0%, #071428 100%); background-attachment: fixed; overscroll-behavior: none;}
+
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#06b6d4;--glass:rgba(255,255,255,0.03);--success:#10b981;--error:#ef4444;}
+    *{box-sizing:border-box}
+    body{font-family:Inter,Segoe UI,Roboto,system-ui,Arial;background:linear-gradient(180deg,#071028 0%, #071428 100%);color:#e6eef6;margin:0;padding:18px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+    header h1{font-size:18px;margin:0}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+    button,input[type=file]{background:var(--glass);border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 12px;border-radius:8px;cursor:pointer;transition:all 0.2s ease;}
+    button:hover{background:rgba(255,255,255,0.05);}
+    button:active{transform:translateY(1px);}
+    button.loading{opacity:0.7;position:relative;color:transparent;}
+    button.loading::after{content:"";position:absolute;width:16px;height:16px;top:50%;left:50%;margin:-8px 0 0 -8px;border:2px solid transparent;border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+    @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+    .wrap{display:grid;grid-template-columns:360px 1fr;gap:14px}
+    @media(max-width:900px){.wrap{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start} }
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03)}
+    .list{max-height:72vh;overflow:auto}
+    .product-item{display:flex;gap:8px;padding:8px;border-radius:8px;align-items:center;cursor:pointer}
+    .product-item:hover{background:rgba(255,255,255,0.02)}
+    .product-item.dragging{opacity:0.5;border:1px dashed var(--accent)}
+    .product-item.active{background:linear-gradient(90deg, rgba(6,182,212,0.06), rgba(6,182,212,0.02));border-left:3px solid var(--accent)}
+    .thumb{width:56px;height:56px;background:#061226;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .thumb img, .thumb video{width:100%;height:100%;object-fit:contain}
+    .meta{flex:1}
+    .meta h3{margin:0;font-size:14px}
+    .meta p{margin:2px 0 0 0;color:var(--muted);font-size:12px}
+    .product-id{background:var(--accent);color:var(--card);font-size:11px;font-weight:bold;padding:2px 6px;border-radius:4px;margin-right:6px;}
+
+    /* Editor form */
+    form{display:grid;grid-template-columns:1fr 320px;gap:12px}
+    @media(max-width:1100px){form{grid-template-columns:1fr}}
+    .field{margin-bottom:10px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    select, input[type=color], input[type=text], input[type=number], textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    select{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:36px;background:var(--glass);}
+    select option{background:var(--card);color:#e6eef6;}
+    input[type=color]{height:40px;width:60px;border:none;padding:0;cursor:pointer;background:none}
+    textarea{min-height:120px}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:999px;font-size:13px;display:inline-flex;gap:8px;align-items:center}
+    .chip button{background:transparent;border:0;color:var(--muted);cursor:pointer}
+
+    .drop{border:1px dashed rgba(255,255,255,0.04);padding:12px;border-radius:8px;text-align:center;background:rgba(255,255,255,0.01)}
+    .drop.dragover{border-color:var(--accent);box-shadow:0 6px 18px rgba(6,182,212,0.06)}
+    .big-preview{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .big-preview img, .big-preview video{max-width:100%;max-height:280px;border-radius:8px}
+    .thumbs{display:flex;gap:8px;flex-wrap:wrap}
+    .mini-thumb{width:80px;height:80px;border-radius:8px;background:#061226;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+    .mini-thumb img, .mini-thumb video{width:100%;height:100%;object-fit:contain}
+    .mini-thumb .remove{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);padding:3px;border-radius:6px;border:0;color:#fff}
+
+    .variant{border-radius:8px;padding:8px;background:rgba(255,255,255,0.015);margin-bottom:8px}
+    .variant input[type=text], .variant input[type=number]{background:var(--glass);border:1px solid rgba(255,255,255,0.06);color:#e6eef6;padding:6px;border-radius:6px}
+    .variant input[type=color]{height:40px;width:60px;border:none;cursor:pointer;border-radius:6px;overflow:hidden}
+    .sizes{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .size-item{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:6px;display:flex;gap:6px;align-items:center}
+    .size-item input{background:var(--glass);border:1px solid rgba(255,255,255,0.06);color:#e6eef6;padding:6px;border-radius:6px}
+
+    footer{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:12px}
+    small{color:var(--muted)}
+
+    .status{position:fixed;bottom:14px;right:14px;padding:6px 8px;backdrop-filter:blur(5px);border-radius:8px;background:rgba(16,185,129,0.17);color:var(--success);font-weight:600}
+    .status.error{position:fixed;bottom:14px;right:14px;background:rgba(239,68,68,0.12);color:var(--error);}
+    .status.loading{position:fixed;bottom:14px;right:14px;background:rgba(6,182,212,0.12);color:var(--accent);}
+    .muted{color:var(--muted)}
+
+
+
+  </style>
+
+</head>
+<body>
+  <header>
+    <h1>Product CMS — client-side editor</h1>
+    <div class="toolbar">
+      <input id="importJSON" type="file" accept="application/json" style="display:none"/>
+      <button onclick="location.href='Data_Viewer.html'">View Orders</button>
+      <button id="btnImport">Import JSON</button>
+      <button id="btnExport">Export JSON</button>
+      <button id="btnSend">Send JSON</button>
+      <button id="btnReset">Reset to products.json</button>
+      <button id="btnClearLocal">Clear localStorage</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <aside class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <strong>Products</strong>
+        <div><button id="btnNew">+ New</button></div>
+      </div>
+      <div class="list panel" id="productsList"></div>
+    </aside>
+
+    <main class="panel">
+      <form id="editor">
+        <div>
+          <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
+            <h2 id="editorTitle">Edit product</h2>
+            <div><button id="btnDuplicate" type="button">Duplicate</button> <button id="btnDelete" type="button">Delete</button></div>
+          </div>
+
+          <div class="field">
+            <label>Product ID</label>
+            <input id="productId" type="text" readonly />
+          </div>
+
+          <div class="field">
+            <label>Title</label>
+            <input id="title" type="text" />
+          </div>
+          <div class="field">
+            <label>Page URL</label>
+            <input id="pageUrl" type="text" value="running-shoes.html" />
+          </div>
+          <div class="field">
+            <label>Price / Original Price</label>
+            <div style="display:flex;gap:8px"><input id="price" type="number" /><input id="originalPrice" type="number" /></div>
+          </div>
+
+          <div class="field">
+            <label>Description</label>
+            <textarea id="description"></textarea>
+          </div>
+
+          <div class="field">
+          <label for="categoryInput">Categories (type and press Enter):</label>
+          <input id="categoryInput" type="text" placeholder="e.g. anime" list="categoryOptions" />
+          <datalist id="categoryOptions">
+            <option value="Anime"></option>
+            <option value="Demon Slayer"></option>
+            <option value="Drop Shoulder"></option>
+            <option value="one piece"></option>
+            <option value="Sports"></option>
+          </datalist>
+          <div class="chips" id="categories"></div>
+          </div>
+
+          <div class="field">
+            <label>Features (type and press Enter)</label>
+            <input id="featureInput" type="text" placeholder="e.g. drop shoulder" list="featuresOptions" />
+            <datalist id="featuresOptions">
+            <option value="Anime"></option>
+            <option value="Demon Slayer"></option>
+            <option value="Drop Shoulder"></option>
+            <option value="one piece"></option>
+            <option value="Sports"></option>
+          </datalist>
+            <div class="chips" id="features"></div>
+          </div>
+
+          <div class="field">
+            <label>Main image</label>
+            <div id="mainImageArea">
+              <div class="drop" id="mainDrop">Drag & drop a main image here or <button id="mainSelect" type="button">Choose</button>
+                <input id="mainFile" type="file" accept="image/*" style="display:none"/></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Other images</label>
+            <div id="imagesContainer" class="thumbs"></div>
+            <div class="drop" id="imagesDrop">Drag & drop images here or <button id="imagesSelect" type="button">Select images</button>
+              <input id="imagesFile" type="file" accept="image/*" multiple style="display:none"/></div>
+          </div>
+
+          <div class="field">
+            <label>Media gallery</label>
+            <div id="mediaContainer" class="thumbs"></div>
+            <div class="drop" id="mediaDrop">Drag & drop images/videos here or <button id="mediaSelect" type="button">Select files</button>
+              <input id="mediaFile" type="file" accept="image/*,video/*" multiple style="display:none"/></div>
+            <small class="muted">Previews prefer files located at <code>../image/</code> and <code>../video/</code>. If your filename exists there, that file will be loaded. Otherwise a temporary thumbnail is shown (you must move the file into the folder if you want persistent server-side preview).</small>
+          </div>
+
+          <div class="field">
+            <label>Variants</label>
+            <div id="variants"></div>
+            <button id="addVariant" type="button">Add Variant</button>
+          </div>
+        </div>
+
+        <aside>
+          <div class="field">
+            <label>Rating</label>
+            <select id="rating">
+              <option value="★★★★★">★★★★★</option>
+              <option value="★★★★☆">★★★★☆</option>
+              <option value="★★★☆☆">★★★☆☆</option>
+              <option value="★★☆☆☆">★★☆☆☆</option>
+              <option value="★☆☆☆☆">★☆☆☆☆</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Reviews</label>
+            <input id="reviews" type="number" />
+          </div>
+
+          <div class="field">
+            <label>Image / Media previews (click to edit filename)</label>
+            <small class="muted">Click any preview to change its filename (this edits JSON only).</small>
+            <div style="margin-top:8px">
+              <div class="big-preview" id="bigPreview"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Export current product JSON</label>
+            <button id="exportProduct" type="button">Download product JSON</button>
+          </div>
+
+          <div class="field">
+            <label>Quick actions</label>
+            <div style="display:flex;gap:8px;flex-direction:column">
+              <button id="applyChanges" type="button">Apply changes (save localStorage)</button>
+              <button id="saveAll" type="button">Save all to file (download products.json)</button>
+            </div>
+          </div>
+        </aside>
+      </form>
+
+      <footer>
+        <small>Local persistence: <strong>localStorage</strong> (key: <code>cmsProducts</code>)</small>
+        <div class="status" id="saveStatus">Idle</div>
+      </footer>
+    </main>
+  </div>
+
+
+
+  
+  <script src="CMS.js"></script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+

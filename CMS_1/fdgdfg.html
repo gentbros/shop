@@ -1,0 +1,537 @@
+
+
+
+// https://script.google.com/macros/s/AKfycbzCqlO3QvlBx2jcKh6ZOgmvVvlET1FEBlICy_doVt2WIxeYre8ryj9Z_zpf7g2QSLKr6Q/exec
+// Sheet1
+
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Data Viewer</title>
+    <style>
+        :root {
+            --bg: #0f1724;
+            --card: #0b1220;
+            --muted: #9aa4b2;
+            --accent: #06b6d4;
+            --glass: rgba(255, 255, 255, 0.03);
+            --success: #10b981;
+            --error: #ef4444;
+            --text: #e6eef6;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', Roboto, system-ui, Arial, sans-serif;
+            background: linear-gradient(180deg, #071028 0%, #071428 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--muted);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button.primary {
+            background: var(--accent);
+            color: var(--card);
+            font-weight: 600;
+        }
+        
+        .status {
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--success);
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--error);
+        }
+        
+        .status.visible {
+            display: block;
+        }
+        
+        .orders-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .order-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            border-radius: 12px;
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: transform 0.2s ease;
+        }
+        
+        .order-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        .order-id {
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        .order-date {
+            color: var(--muted);
+            font-size: 13px;
+        }
+        
+        .order-detail {
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        
+        .detail-value {
+            font-size: 14px;
+        }
+        
+        .products-list {
+            margin-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 15px;
+        }
+        
+        .product-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+        }
+        
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+            background: #061226;
+        }
+        
+        .product-info {
+            flex: 1;
+        }
+        
+        .product-title {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .product-price {
+            color: var(--accent);
+            font-size: 13px;
+        }
+        
+        .order-total {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: right;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .loading.visible {
+            display: block;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(6, 182, 212, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .config-panel {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        
+        .config-panel h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+        }
+        
+        @media (max-width: 768px) {
+            .orders-container {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Order Data Viewer</h1>
+            <div class="controls">
+                <button id="fetchOrders" class="primary">Fetch Orders</button>
+                <button id="clearData">Clear Data</button>
+            </div>
+        </header>
+        
+        <div class="config-panel">
+            <h2>Configuration</h2>
+            <div class="input-group">
+                <label for="scriptUrl">Google Apps Script URL</label>
+                <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/..." />
+            </div>
+            <div class="input-group">
+                <label for="sheetName">Sheet Name</label>
+                <input type="text" id="sheetName" value="Orders" />
+            </div>
+        </div>
+        
+        <div id="statusMessage" class="status"></div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading orders...</p>
+        </div>
+        
+        <div id="ordersContainer" class="orders-container">
+            <!-- Orders will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fetchOrdersBtn = document.getElementById('fetchOrders');
+            const clearDataBtn = document.getElementById('clearData');
+            const statusMessage = document.getElementById('statusMessage');
+            const loadingElement = document.getElementById('loading');
+            const ordersContainer = document.getElementById('ordersContainer');
+            const scriptUrlInput = document.getElementById('scriptUrl');
+            const sheetNameInput = document.getElementById('sheetName');
+            
+            // Try to load saved settings
+            const savedScriptUrl = localStorage.getItem('orderViewer_scriptUrl');
+            const savedSheetName = localStorage.getItem('orderViewer_sheetName');
+            
+            if (savedScriptUrl) scriptUrlInput.value = savedScriptUrl;
+            if (savedSheetName) sheetNameInput.value = savedSheetName;
+            
+            function showStatus(message, isError = false) {
+                statusMessage.textContent = message;
+                statusMessage.className = isError ? 'status error visible' : 'status visible';
+                
+                // Auto-hide after 5 seconds if not an error
+                if (!isError) {
+                    setTimeout(() => {
+                        statusMessage.classList.remove('visible');
+                    }, 5000);
+                }
+            }
+            
+            function setLoading(visible) {
+                loadingElement.classList.toggle('visible', visible);
+            }
+            
+            function clearOrders() {
+                ordersContainer.innerHTML = '';
+            }
+            
+            function formatDate(timestamp) {
+                if (!timestamp) return 'Unknown date';
+                
+                try {
+                    const date = new Date(timestamp);
+                    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                } catch (e) {
+                    return timestamp;
+                }
+            }
+            
+            function formatPrice(price) {
+                if (!price) return '৳0.00';
+                if (typeof price === 'string' && price.startsWith('৳')) return price;
+                return '৳' + parseFloat(price).toFixed(2);
+            }
+            
+            function displayOrders(orders) {
+                clearOrders();
+                
+                if (!orders || orders.length === 0) {
+                    ordersContainer.innerHTML = '<p class="no-orders">No orders found.</p>';
+                    return;
+                }
+                
+                // Check if this is the raw sheet data format
+                const isRawSheetData = Array.isArray(orders) && orders.length > 0 && Array.isArray(orders[0]);
+                
+                if (isRawSheetData) {
+                    // Process raw sheet data (array of arrays)
+                    orders.forEach((order, index) => {
+                        if (index === 0) return; // Skip header row if present
+                        
+                        const orderCard = createOrderCardFromArray(order);
+                        ordersContainer.appendChild(orderCard);
+                    });
+                } else {
+                    // Process parsed order objects
+                    orders.forEach(order => {
+                        const orderCard = createOrderCardFromObject(order);
+                        ordersContainer.appendChild(orderCard);
+                    });
+                }
+            }
+            
+            function createOrderCardFromArray(orderArray) {
+                const orderCard = document.createElement('div');
+                orderCard.className = 'order-card';
+                
+                // Parse the order data based on your sheet structure
+                const orderData = {
+                    timestamp: orderArray[0] || '',
+                    ids: orderArray[1] ? orderArray[1].toString().split(',\n') : [],
+                    titles: orderArray[2] ? orderArray[2].toString().split(',\n') : [],
+                    images: orderArray[3] ? orderArray[3].toString().split(',\n') : [],
+                    prices: orderArray[4] ? orderArray[4].toString().split(',\n') : [],
+                    products: orderArray[5] ? orderArray[5].toString().split(',\n') : [],
+                    area: orderArray[6] || '',
+                    name: orderArray[7] || '',
+                    phone: orderArray[8] || '',
+                    district: orderArray[9] || '',
+                    address: orderArray[10] || '',
+                    options: orderArray[11] || '',
+                    total: orderArray[12] || '৳0.00'
+                };
+                
+                // Create order card content
+                orderCard.innerHTML = `
+                    <div class="order-header">
+                        <div class="order-id">Order #${orderData.ids[0] || 'N/A'}</div>
+                        <div class="order-date">${formatDate(orderData.timestamp)}</div>
+                    </div>
+                    
+                    <div class="order-detail">
+                        <span class="detail-label">Customer</span>
+                        <span class="detail-value">${orderData.name}</span>
+                    </div>
+                    
+                    <div class="order-detail">
+                        <span class="detail-label">Phone</span>
+                        <span class="detail-value">${orderData.phone}</span>
+                    </div>
+                    
+                    <div class="order-detail">
+                        <span class="detail-label">Delivery Area</span>
+                        <span class="detail-value">${orderData.area}${orderData.district ? ', ' + orderData.district : ''}</span>
+                    </div>
+                    
+                    <div class="order-detail">
+                        <span class="detail-label">Address</span>
+                        <span class="detail-value">${orderData.address || 'Not specified'}</span>
+                    </div>
+                    
+                    <div class="products-list">
+                        <span class="detail-label">Products</span>
+                        ${orderData.titles.map((title, index) => `
+                            <div class="product-item">
+                                <img src="${orderData.images[index] || ''}" alt="${title}" class="product-image" onerror="this.style.display='none'">
+                                <div class="product-info">
+                                    <div class="product-title">${title}</div>
+                                    <div class="product-price">${formatPrice(orderData.prices[index])}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="order-total">
+                        Total: ${formatPrice(orderData.total)}
+                    </div>
+                `;
+                
+                return orderCard;
+            }
+            
+            function createOrderCardFromObject(orderObj) {
+                // This function would create a card from a parsed order object
+                // You would need to adjust this based on your actual order object structure
+                const orderCard = document.createElement('div');
+                orderCard.className = 'order-card';
+                orderCard.textContent = JSON.stringify(orderObj);
+                return orderCard;
+            }
+            
+            async function fetchOrders() {
+                const scriptUrl = scriptUrlInput.value;
+                const sheetName = sheetNameInput.value;
+                
+                if (!scriptUrl) {
+                    showStatus('Please enter your Google Apps Script URL', true);
+                    return;
+                }
+                
+                // Save settings
+                localStorage.setItem('orderViewer_scriptUrl', scriptUrl);
+                localStorage.setItem('orderViewer_sheetName', sheetName);
+                
+                setLoading(true);
+                clearOrders();
+                
+                try {
+                    const url = `${scriptUrl}?action=read&path=${encodeURIComponent(sheetName)}`;
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // First try to parse as JSON
+                    try {
+                        const orders = await response.json();
+                        displayOrders(orders);
+                        showStatus(`Successfully loaded ${orders.length} orders`);
+                    } catch (jsonError) {
+                        // If JSON parsing fails, try to read as text
+                        const text = await response.text();
+                        
+                        // Check if it's an error message
+                        if (text.includes("Sheet not found") || text.includes("Error")) {
+                            throw new Error(text);
+                        } else {
+                            // Try to parse as CSV or other format if needed
+                            showStatus('Received response but could not parse it as JSON', true);
+                            console.error('Response text:', text);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching orders:', error);
+                    showStatus('Error: ' + error.message, true);
+                } finally {
+                    setLoading(false);
+                }
+            }
+            
+            fetchOrdersBtn.addEventListener('click', fetchOrders);
+            clearDataBtn.addEventListener('click', clearOrders);
+            
+            // Try to load orders if URL is already configured
+            if (savedScriptUrl) {
+                fetchOrders();
+            }
+        });
+    </script>
+</body>
+</html>

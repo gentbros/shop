@@ -1,0 +1,45 @@
+/* products container */
+
+/* Add this to your product card.css file */
+.products-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+  justify-items: center;
+}
+
+/* Responsive grid adjustments */
+@media (min-width: 1600px) {
+  .products-container {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (max-width: 1599px) and (min-width: 1200px) {
+  .products-container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 768px) {
+  .products-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 767px) and (min-width: 480px) {
+  .products-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 479px) {
+  .products-container {
+    grid-template-columns:repeat(2, 1fr);
+      justify-items: center;
+
+  }
+}

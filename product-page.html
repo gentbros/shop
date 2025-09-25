@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gent Bros</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_W.png">
+
+  <!-- Your CSS files (unchanged) -->
+  <link rel="stylesheet" href="CSS/colors.css">
+  <link rel="stylesheet" href="CSS/debug overlay.css">  
+  <link rel="stylesheet" href="CSS/product-page.css">
+  <link rel="stylesheet" href="CSS/product card.css">
+  <link rel="stylesheet" href="CSS/top nav bar.css">
+  <link rel="stylesheet" href="CSS/Footer.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  
+</head>
+<body>
+  <!-- Reuse your header from main page -->
+  <div class="header-wrapper">
+   <div class="header-container">
+ 
+     <div onclick="window.location.href='index.html'">
+      <div>
+       <div class="shop-name"><img src="logos/logo.svg" alt="Logo"> Shop</div>
+      </div>
+    </div>
+     
+
+     <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search products...">
+      <button id="searchButton">Search</button>
+     </div>
+     <div class="cart-icon">
+         <a href="cart.html" class="cart-icon">
+           <i class="fas fa-shopping-cart"></i>
+           <span class="cart-count">0</span>
+         </a>
+     </div>
+   </div>
+  </div>
+
+
+
+  <!-- Product content will be inserted here -->
+  <div class="product-page-container" id="productPageContainer"></div>
+
+
+
+    <!-- This is the placeholder for the footer -->
+    <div id="footer-placeholder"></div>
+
+    <script>
+        fetch('footer.html')
+            .then(response => {
+                // Check if the request was successful
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Get the placeholder element by its ID and insert the fetched HTML
+                const footerPlaceholder = document.getElementById('footer-placeholder');
+                if (footerPlaceholder) {
+                    footerPlaceholder.innerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem fetching the footer:', error);
+            });
+    </script>
+
+
+
+
+
+   <script src="JS/product-page.js" defer></script>
+   <script src="JS/cart-utils.js" defer></script>
+
+
+
+   <!-- Debug Overlay -->
+   <!-- <button id="clearCartBtn">Clear Cart (Test)</button>
+   <div id="cartDebugPanel"></div> -->
+
+<!-- Toast Popup -->
+<div id="toast" class="toast"></div>
+
+
+
+</body>
+</html>
+

@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Order Data Viewer</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_B.png">
+
+  <style>
+    :root {
+      --bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#06b6d4;
+      --glass:rgba(255,255,255,0.03);--success:#10b981;--error:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html, body{
+      height:100%;
+      margin:0;
+      background:linear-gradient(180deg,#071028 0%, #071428 100%);
+      background-attachment: fixed;
+      font-family:Inter,Segoe UI,Roboto,system-ui,Arial;
+      color:#e6eef6;
+      padding:14px;
+      overscroll-behavior: none;
+    }
+
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:8px;flex-wrap:wrap;gap:10px;
+    }
+    header h1{font-size:18px;margin:0}
+    header .actions{display:flex;gap:8px;flex-wrap:wrap;position:relative}
+
+    .controls-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+
+    button{
+      background:var(--glass);border:1px solid rgba(255,255,255,0.04);
+      color:var(--muted);padding:8px 14px;border-radius:8px;
+      cursor:pointer;transition:all 0.2s ease;
+    }
+    button:hover{background:rgba(255,255,255,0.05);}
+    button:active{transform:translateY(1px);}
+
+    /* --- status (default plain) --- */
+    #status { color:var(--muted); margin-bottom:12px; font-size:13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 40px); }
+
+    /* --- styled status bubble when active --- */
+    .status{padding:6px 8px;border-radius:8px;background:rgba(16,185,129,0.12);color:var(--success);font-weight:600}
+    .status.error{background:rgba(239,68,68,0.12);color:var(--error);}
+    .status.loading{background:rgba(6,182,212,0.12);color:var(--accent);}
+
+    /* small popups near delete button (we'll create them dynamically) */
+    .confirm-popup, .countdown-popup {
+      position: fixed; /* FIXED so scrolling won't move it */
+      z-index: 100000;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 10px;
+      border-radius: 8px;
+      min-width: 220px;
+      max-width: calc(100vw - 32px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      color: #e6eef6;
+      font-size: 13px;
+    }
+    .confirm-popup .row, .countdown-popup .row { display:flex; gap:8px; margin-top:8px; justify-content:flex-end; }
+    .confirm-popup .title { font-weight:700; margin-bottom:6px; }
+    .countdown-popup .count { font-weight:700; font-size:16px; margin-right:auto; align-self:center; }
+
+    /* --- Orders Grid --- */
+    #orders {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap:16px;
+    }
+
+    .order-card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;padding:14px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+
+    .confirmed-select{
+      font-weight:600;font-size:12px;
+      border-radius:8px;padding:4px 8px;
+      border:none;cursor:pointer;appearance:none;
+    }
+    .confirmed-select.yes{background:rgba(16,185,129,0.12);color:var(--success);}
+    .confirmed-select.no{background:rgba(239,68,68,0.12);color:var(--error);}
+    .confirmed-select.pending{background:rgba(6,182,212,0.12);color:var(--accent);}
+
+    .products{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+      gap:10px;
+    }
+    .product-item{
+      display:flex;gap:10px;padding:8px;border-radius:8px;
+      background:rgba(255,255,255,0.015);align-items:center;
+    }
+    .thumb{
+      width:60px;height:60px;background:#061226;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;
+    }
+    .thumb img{width:100%;height:100%;object-fit:contain}
+    .meta{flex:1;min-width:100px}
+    .meta h3{margin:0;font-size:14px}
+    .meta p{margin:2px 0 0 0;color:var(--muted);font-size:12px}
+    .product-details {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .detail-badge {
+      background: rgba(255,255,255,0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .footer{margin-top:10px;font-weight:600}
+
+    @media(max-width:600px){
+      body{padding:10px;}
+      header{flex-direction:column;align-items:flex-start;gap:8px}
+      .card-header{flex-direction:column;align-items:flex-start;}
+      #orders{grid-template-columns:1fr;}
+      .products{grid-template-columns:1fr;}
+      .thumb{width:80px;height:80px;}
+      .meta h3{font-size:15px}
+      .meta p{font-size:12px}
+    }
+
+    /* small saved bubble bottom-right */
+    .saved-bubble{position:fixed;bottom:14px;right:14px;padding:6px 8px;border-radius:8px;background:rgba(16,185,129,0.12);color:var(--success);font-weight:600;display:none}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📦 Orders Data Viewer</h1>
+    <div class="actions">
+      <button onclick="location.href='CMS.html'">Go to CMS</button>
+      <button id="refreshBtn">Refresh</button>
+      <button id="filterBtn">Show All</button>
+      <!-- Delete button -->
+      <button id="deleteBtn" title="Delete all rows except header" style="background:rgba(239,68,68,0.06);color:#ffd6d6;border-color:rgba(239,68,68,0.12)">Delete</button>
+    </div>
+  </header>
+
+  <!-- status text (top-left). Initially plain muted text; becomes styled bubble when loading/error -->
+  <div id="status" title=""></div>
+
+  <div class="controls-row"></div>
+
+  <div id="orders"></div>
+
+  <div class="saved-bubble" id="saveStatus">Saved</div>
+
+  <!-- loading-screen loader (injected from external file) -->
+  <script>
+    (function(){
+      window.loadingScreenReady = new Promise((resolve) => {
+        fetch('../Google Sheet/loading-screen.html', {cache: 'no-store'})
+          .then(r => {
+            if (!r.ok) throw new Error('Could not load loading-screen.html');
+            return r.text();
+          })
+          .then(html => {
+            function inject() {
+              document.body.insertAdjacentHTML('afterbegin', html);
+              const overlay = document.getElementById('loading-overlay');
+              window.showLoading = function() {
+                if (overlay) {
+                  overlay.style.display = 'flex';
+                  overlay.classList.remove('ls-hidden');
+                  overlay.classList.add('ls-visible');
+                }
+              };
+              window.hideLoading = function() {
+                if (overlay) {
+                  overlay.classList.remove('ls-visible');
+                  overlay.classList.add('ls-hidden');
+                  const dur = parseFloat(getComputedStyle(overlay).getPropertyValue('--ls-fade-duration') || 0.45) * 1000;
+                  setTimeout(()=> overlay.style.display = 'none', dur + 50);
+                }
+              };
+              if (overlay) overlay.style.display = 'none';
+              resolve();
+            }
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', inject, {once:true});
+            } else {
+              inject();
+            }
+          })
+          .catch(err => {
+            console.warn('Loading screen failed to load:', err);
+            window.showLoading = window.hideLoading = function(){};
+            resolve();
+          });
+      });
+    })();
+  </script>
+
+  <script>
+    // ---------- configuration (hard-coded) ----------
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzCqlO3QvlBx2jcKh6ZOgmvVvlET1FEBlICy_doVt2WIxeYre8ryj9Z_zpf7g2QSLKr6Q/exec'; // <-- keep your web app URL
+    const SHEET_NAME = 'Sheet1'; // <-- sheet name
+
+    // ---------- state ----------
+    let ordersData = [];
+    let showAll = false;
+    const statusEl = document.getElementById('status');
+    const ordersContainer = document.getElementById('orders');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const filterBtn = document.getElementById('filterBtn');
+    const saveStatus = document.getElementById('saveStatus');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    // helpers to toggle status appearance
+    function setStatusTextPlain(text) {
+      statusEl.classList.remove('status','loading','error');
+      statusEl.textContent = text;
+      statusEl.style.color = 'var(--muted)';
+      statusEl.title = text;
+    }
+    function setStatusLoading(text) {
+      statusEl.textContent = text;
+      statusEl.style.color = '';
+      statusEl.classList.remove('error');
+      statusEl.classList.add('status','loading');
+      statusEl.title = text;
+    }
+    function setStatusError(text) {
+      statusEl.textContent = text;
+      statusEl.style.color = '';
+      statusEl.classList.remove('loading');
+      statusEl.classList.add('status','error');
+      statusEl.title = text;
+    }
+
+    // small saved bubble
+    function flashSaved() {
+      saveStatus.style.display = 'block';
+      setTimeout(()=> saveStatus.style.display = 'none', 1300);
+    }
+
+    // normalize confirmed
+    function normalizeConfirmed(raw) {
+      if (raw == null) return '';
+      const s = String(raw).trim().toLowerCase();
+      if (s === 'pending') return '';
+      return s;
+    }
+
+    // fetch & load orders (shows loading screen automatically)
+    async function loadFromSheet() {
+      await window.loadingScreenReady;
+      try { showLoading(); } catch(e){}
+      setStatusLoading('Fetching orders from Google Sheet...');
+      try {
+        const fullUrl = WEBAPP_URL + (WEBAPP_URL.includes('?') ? '&' : '?') + 'action=read&path=' + encodeURIComponent(SHEET_NAME);
+        const resp = await fetch(fullUrl, { method: 'GET', mode: 'cors' });
+        const text = await resp.text();
+        if (!text) {
+          setStatusError('Empty response from web app');
+          ordersData = [];
+          renderOrders();
+          return;
+        }
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (err) {
+          console.warn('Response not JSON:', text);
+          setStatusError('Response not JSON — check console');
+          ordersData = [];
+          renderOrders();
+          return;
+        }
+        if (!Array.isArray(parsed)) {
+          console.warn('Returned value is not an array', parsed);
+          setStatusError('Returned JSON is not an array');
+          ordersData = [];
+          renderOrders();
+          return;
+        }
+
+        // normalize
+        ordersData = parsed.map(item => {
+          const obj = Object.assign({}, item);
+          // find confirmed key
+          const keys = Object.keys(obj);
+          let rawConfirmed = '';
+          if (obj.hasOwnProperty('confirmed')) rawConfirmed = obj.confirmed;
+          else if (obj.hasOwnProperty('Confirmed')) rawConfirmed = obj.Confirmed;
+          else {
+            const k = keys.find(k => k.toLowerCase() === 'confirmed');
+            if (k) rawConfirmed = obj[k];
+          }
+          obj._confirmed = normalizeConfirmed(rawConfirmed);
+
+          // ensure __row
+          if (!obj.hasOwnProperty('__row')) {
+            if (obj.row) obj.__row = obj.row;
+            else if (obj.Row) obj.__row = obj.Row;
+            else {
+              const rowKey = keys.find(k => k.toLowerCase() === '__row' || k.toLowerCase() === 'row');
+              if (rowKey) obj.__row = obj[rowKey];
+            }
+          }
+          return obj;
+        });
+
+        setStatusTextPlain(`Loaded ${ordersData.length} orders.`);
+        renderOrders();
+      } catch (err) {
+        console.error(err);
+        setStatusError('Fetch error: ' + (err.message || err));
+      } finally {
+        try{ hideLoading(); } catch(e){}
+      }
+    }
+
+    // update confirmed in sheet
+    async function updateConfirmInSheet(sheetName, row, confirmedValue) {
+      const base = WEBAPP_URL;
+      if (!base) throw new Error('Web app URL not set');
+      const full = base + (base.includes('?') ? '&' : '?') + `action=updateConfirm&path=${encodeURIComponent(sheetName)}&row=${encodeURIComponent(row)}&confirmed=${encodeURIComponent(confirmedValue)}`;
+      const resp = await fetch(full, { method: 'GET', mode: 'cors' });
+      const txt = await resp.text();
+      let parsed;
+      try { parsed = JSON.parse(txt); } catch(e){ throw new Error('Update failed: ' + txt); }
+      if (!parsed || !parsed.success) throw new Error('Update failed: ' + JSON.stringify(parsed));
+      return parsed;
+    }
+
+    // call clearAll endpoint (confirm must be 1)
+    async function callClearAll() {
+      setStatusLoading('Sending delete request...');
+      try { showLoading(); } catch(e){}
+      try {
+        const base = WEBAPP_URL;
+        if (!base) throw new Error('Web app URL not set');
+        const full = base + (base.includes('?') ? '&' : '?') + `action=clearAll&path=${encodeURIComponent(SHEET_NAME)}&confirm=1`;
+
+        // DEBUG: log URL so you can paste to browser or share in console
+        console.log('[callClearAll] Request URL:', full);
+        // also show short text in status (not the entire long url)
+        setStatusTextPlain('Sending delete request to web app (see console for URL).');
+
+        const resp = await fetch(full, { method: 'GET', mode: 'cors', cache: 'no-store' });
+        const txt = await resp.text();
+        console.log('[callClearAll] Raw response:', txt);
+
+        // try parse json; if not, show raw text to user
+        let parsed;
+        try { parsed = JSON.parse(txt); } catch(e) {
+          // show the raw response so we can debug deployment/permission issues
+          setStatusError('Delete failed: unexpected response (check console).');
+          console.error('Delete response (not JSON):', txt);
+          // expose response in an alert so you can copy-paste quickly
+          alert('Delete response (not JSON):\n' + txt + '\n\nSee console for request URL.');
+          return { success: false, message: txt };
+        }
+
+        if (parsed && parsed.success) {
+          setStatusTextPlain(parsed.message || ('Deleted ' + (parsed.deleted || '?') + ' rows.'));
+          setTimeout(()=> { loadFromSheet(); }, 600);
+        } else {
+          setStatusError(parsed.message || ('Delete failed: ' + JSON.stringify(parsed)));
+          console.error('Delete parsed response:', parsed);
+          alert('Delete returned error:\n' + (parsed.message || JSON.stringify(parsed)));
+        }
+        return parsed;
+      } catch (err) {
+        console.error(err);
+        setStatusError('Delete request failed: ' + (err.message || err));
+        alert('Delete request failed: ' + (err.message || err) + '\nSee console for details.');
+        return { success: false, message: err.message || String(err) };
+      } finally {
+        try{ hideLoading(); } catch(e){}
+      }
+    }
+
+    // parse variant and quantity data
+    function parseVariantQuantity(variantStr) {
+      if (!variantStr) return { color: '', size: '', quantity: '' };
+      
+      const parts = variantStr.split('|').map(part => part.trim());
+      
+      // Handle cases where we have "null | null | 1" format
+      if (parts.length >= 3) {
+        return {
+          color: parts[0] !== 'null' ? parts[0] : '',
+          size: parts[1] !== 'null' ? parts[1] : '',
+          quantity: parts[2] !== 'null' ? parts[2] : ''
+        };
+      }
+      
+      // Handle other formats or return empty values
+      return { color: '', size: '', quantity: variantStr || '' };
+    }
+
+    // render cards
+    function renderOrders() {
+      ordersContainer.innerHTML = '';
+      if (!ordersData || ordersData.length === 0) {
+        ordersContainer.innerHTML = '<div class="muted">No orders to show. Click Refresh.</div>';
+        return;
+      }
+      ordersData.forEach(order => {
+        const confirmedValue = order._confirmed || '';
+        if (!showAll && confirmedValue !== '') return;
+
+        const titleRaw = (order.Title || order.title || '');
+        const imageRaw = (order.Image || order.image || '');
+        const priceRaw = (order.Price || order.price || '');
+        
+        // Get variant data from multiple possible field names
+        const variantRaw = order['Variant & Quantity'] || order['Variant & quantity'] || 
+                          order['variant & quantity'] || order.Variant || order.variant || '';
+
+        const titles = titleRaw ? String(titleRaw).split(/,\n?/) : [''];
+        const images = imageRaw ? String(imageRaw).split(/,\n?/) : [''];
+        const prices = priceRaw ? String(priceRaw).split(/,\n?/) : [''];
+        const variants = variantRaw ? String(variantRaw).split(/,\n?/) : [''];
+
+        let productsHTML = '';
+        for (let i = 0; i < titles.length; i++) {
+          const t = (titles[i] || '').trim();
+          const img = (images[i] || images[0] || '').trim();
+          const pr = (prices[i] || '').trim();
+          const vr = (variants[i] || '').trim();
+          
+          // Parse the variant and quantity information
+          const { color, size, quantity } = parseVariantQuantity(vr);
+          
+          productsHTML += `
+            <div class="product-item">
+              <div class="thumb"><img src="../image/${encodeURI(img)}" alt="" onerror="this.style.display='none'"></div>
+              <div class="meta">
+                <h3>${escapeHtml(t)}</h3>
+                <p>${escapeHtml(pr)}</p>
+                <div class="product-details">
+                  ${color ? `<span class="detail-badge">Color: ${escapeHtml(color)}</span>` : ''}
+                  ${size ? `<span class="detail-badge">Size: ${escapeHtml(size)}</span>` : ''}
+                  ${quantity ? `<span class="detail-badge">Qty: ${escapeHtml(quantity)}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        const displayTimestamp = order['Timestamp '] || order.Timestamp || order.timestamp || '';
+        const displayName = order.Name || order.name || '';
+        const phone = order['Phone Number'] || order['Phone number'] || order.phone || '';
+        const district = order['District & Upazila'] || order['District & upazila'] || order['district & upazila'] || '';
+        const street = order['Street Address'] || order['Street address'] || order.street || '';
+        const totalPrice = order['Total Price'] || order.total || order['TotalPrice'] || '';
+
+        let statusClass = 'pending';
+        if (confirmedValue === 'yes') statusClass = 'yes';
+        else if (confirmedValue === 'no') statusClass = 'no';
+
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        card.innerHTML = `
+          <div class="card-header">
+            <span>📅 ${displayTimestamp ? new Date(displayTimestamp).toLocaleString() : ''}</span>
+            <select class="confirmed-select ${statusClass}" data-row="${escapeHtml(order.__row || '')}">
+              <option value="" ${confirmedValue === '' ? 'selected' : ''}>pending</option>
+              <option value="yes" ${confirmedValue === 'yes' ? 'selected' : ''}>yes</option>
+              <option value="no" ${confirmedValue === 'no' ? 'selected' : ''}>no</option>
+            </select>
+          </div>
+          <p>👤 <b>${escapeHtml(displayName)}</b> | 📞 ${escapeHtml(phone)}</p>
+          <p>📍 ${escapeHtml(district)} | ${escapeHtml(street)}</p>
+          <p class="muted">🌍 Area: ${escapeHtml(order.Area || order.area || '')}</p>
+          <div class="products">${productsHTML}</div>
+          <p class="footer">💰 Total: ${escapeHtml(totalPrice)}</p>
+        `;
+
+        const sel = card.querySelector('.confirmed-select');
+        if (sel) {
+          sel.addEventListener('change', async () => {
+            const newVal = sel.value;
+            const rowId = sel.dataset.row;
+            // optimistic class
+            sel.classList.remove('yes','no','pending');
+            sel.classList.add(newVal === 'yes' ? 'yes' : newVal === 'no' ? 'no' : 'pending');
+            setStatusLoading('Updating row ' + rowId + '...');
+            try {
+              showLoading();
+              await updateConfirmInSheet(SHEET_NAME, rowId, newVal);
+              // update local model
+              const local = ordersData.find(o => String(o.__row) === String(rowId) || String(o.row) === String(rowId));
+              if (local) {
+                local._confirmed = newVal;
+                if (local.hasOwnProperty('Confirmed')) local.Confirmed = newVal;
+                if (local.hasOwnProperty('confirmed')) local.confirmed = newVal;
+              }
+              setStatusTextPlain('Updated row ' + rowId);
+              flashSaved();
+            } catch (err) {
+              console.error(err);
+              setStatusError('Update failed: ' + (err.message || err));
+              renderOrders(); // revert visual state
+            } finally {
+              try{ hideLoading(); } catch(e){}
+            }
+          });
+        }
+
+        ordersContainer.appendChild(card);
+      });
+
+      if (!ordersContainer.firstElementChild) {
+        ordersContainer.innerHTML = '<div class="muted">No orders matching filter.</div>';
+      }
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;');
+    }
+
+    // UI wiring
+    filterBtn.addEventListener('click', () => {
+      showAll = !showAll;
+      filterBtn.textContent = showAll ? 'Show Pending Only' : 'Show All';
+      renderOrders();
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      setStatusLoading('Refreshing data...');
+      loadFromSheet();
+    });
+
+    // ---------- Delete flow UI ----------
+    // Create and position a small popup next to delete button for confirm/cancel
+    let popupEl = null;
+    let countdownEl = null;
+    let countdownTimer = null;
+    let countdownValue = 5;
+    let pinnedPosition = null; // store viewport-based top/right when popup opens
+
+    function removePopup() {
+      if (popupEl && popupEl.parentNode) popupEl.parentNode.removeChild(popupEl);
+      popupEl = null;
+      countdownEl = null;
+      pinnedPosition = null;
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    }
+
+    // place a fixed popup anchored under the delete button's current viewport location.
+    // popup will be position:fixed so scrolling won't move it. On resize, we'll re-calc.
+function positionPopupFixedUnderButton(popup, buttonRect) {
+  popup.style.position = 'fixed';
+  popup.style.visibility = 'hidden';
+  // ensure in DOM
+  if (!popup.parentNode) document.body.appendChild(popup);
+  // measure popup size
+  popup.style.left = '0px';
+  popup.style.top = '0px';
+  const pRect = popup.getBoundingClientRect();
+
+  const gap = 8;
+  let top, right;
+
+  // Mobile layout (screen width <= 600px)
+  if (window.innerWidth <= 600) {
+    // Position under the delete button but align to right side of screen
+    top = Math.round(buttonRect.bottom + gap);
+    
+    // Position from right edge with some margin
+    right = 16; // 16px from right edge
+    
+    // If popup would go off bottom, position above button instead
+    if (top + pRect.height > window.innerHeight - 8) {
+      top = Math.round(buttonRect.top - pRect.height - gap);
+    }
+    
+    // Ensure it doesn't go off top
+    if (top < 8) top = 8;
+    
+    // Ensure it doesn't go off right (though with fixed right position, this shouldn't happen)
+    const maxRight = window.innerWidth - pRect.width - 8;
+    if (right > maxRight) right = maxRight;
+  } 
+  // Desktop layout (original behavior)
+  else {
+    // align right edge of popup with right edge of button (8px offset)
+    top = Math.round(buttonRect.bottom + gap);
+    right = Math.round(window.innerWidth - buttonRect.right + gap);
+
+    // Clamp to viewport: if popup would overflow bottom, move above button
+    if (top + pRect.height > window.innerHeight - 8) {
+      top = Math.round(buttonRect.top - pRect.height - gap);
+    }
+    if (top < 8) top = 8;
+
+    // Clamp right so popup not go off left
+    if (right < 8) right = 8;
+  }
+
+  // apply positioning
+  popup.style.right = right + 'px';
+  popup.style.top = top + 'px';
+  popup.style.left = 'auto';
+  popup.style.visibility = 'visible';
+
+  // pin the used top/right so scrolling doesn't change it
+  pinnedPosition = { top: popup.style.top, right: popup.style.right };
+}
+
+
+
+
+
+
+
+
+    function openConfirmPopup() {
+      removePopup();
+      const rect = deleteBtn.getBoundingClientRect();
+
+      popupEl = document.createElement('div');
+      popupEl.className = 'confirm-popup';
+      popupEl.style.cssText = ` position: fixed;visibility:visible;eft:auto;top:69px;right:36px;backdrop-filter:blur(5px); `;
+      popupEl.innerHTML = `
+        <div class="title">Delete all data?</div>
+        <div>Are you sure you want to remove all data rows (header will be preserved)?</div>
+        <div class="row">
+          <button id="confirmNo">Cancel</button>
+          <button id="confirmYes" style="background:rgba(239,68,68,0.06);color:#ffd6d6;border-color:rgba(239,68,68,0.12)">Delete</button>
+        </div>
+      `;
+
+      document.body.appendChild(popupEl);
+      positionPopupFixedUnderButton(popupEl, rect);
+
+      // handlers
+      popupEl.querySelector('#confirmNo').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        removePopup();
+      });
+      popupEl.querySelector('#confirmYes').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openCountdownPopup();
+      });
+    }
+
+    function openCountdownPopup() {
+      if (!popupEl) return;
+      // replace contents with countdown UI
+      popupEl.className = 'countdown-popup';
+      popupEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="count">Deleting in <span id="countVal">5</span>…</div>
+          <div style="margin-left:6px;color:var(--muted);font-size:12px">Click Cancel to abort</div>
+        </div>
+        <div class="row">
+          <button id="cancelDelete">Cancel</button>
+        </div>
+      `;
+      countdownEl = popupEl.querySelector('#countVal');
+      countdownValue = 5;
+      countdownEl.textContent = countdownValue;
+
+      // Reposition on resize only (so scroll doesn't affect)
+      const rect = deleteBtn.getBoundingClientRect();
+      positionPopupFixedUnderButton(popupEl, rect);
+
+      // start countdown
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+      countdownTimer = setInterval(async () => {
+        countdownValue--;
+        if (countdownEl) countdownEl.textContent = countdownValue;
+        if (countdownValue <= 0) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          // perform delete
+          try {
+            removePopup(); // hide immediately
+            setStatusLoading('Deleting all data (header preserved)...');
+            await callClearAll(); // this will reload sheet afterwards
+            loadFromSheet(); // Reload data after deletion
+          } catch (err) {
+            console.error('Delete failed', err);
+            setStatusError('Delete failed: ' + (err.message || err));
+          }
+        }
+      }, 1000);
+
+      // cancel handler
+      const cancelBtn = popupEl.querySelector('#cancelDelete');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+          }
+          removePopup();
+          setStatusTextPlain('Deletion cancelled.');
+        });
+      }
+    }
+
+    // attach delete click
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (popupEl) {
+        removePopup();
+        return;
+      }
+      openConfirmPopup();
+    });
+
+    // close popup when clicking anywhere outside
+    document.addEventListener('click', (evt) => {
+      if (!popupEl) return;
+      if (evt.target === deleteBtn) return;
+      if (popupEl.contains(evt.target)) return;
+      removePopup();
+    });
+
+    // reposition popup on resize (keeps it under the delete button)
+    window.addEventListener('resize', () => {
+      if (!popupEl) return;
+      const rect = deleteBtn.getBoundingClientRect();
+      positionPopupFixedUnderButton(popupEl, rect);
+    });
+
+    // handle escape key to close popup
+    document.addEventListener('keydown', (evt) => {
+      if (evt.key === 'Escape' && popupEl) {
+        removePopup();
+      }
+    });
+
+    // auto-start loading on open
+    window.addEventListener('load', () => {
+      setStatusLoading('Loading orders...');
+      loadFromSheet();
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Order Data Viewer</title>
+  <link rel="icon" type="image/png" href="../logos/favicon_B.png">
+
+  <style>
+    :root {
+      --bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#06b6d4;
+      --glass:rgba(255,255,255,0.03);--success:#10b981;--error:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html, body{
+      height:100%;
+      margin:0;
+      background:linear-gradient(180deg,#071028 0%, #071428 100%);
+      background-attachment: fixed;
+      font-family:Inter,Segoe UI,Roboto,system-ui,Arial;
+      color:#e6eef6;
+      padding:14px;
+      overscroll-behavior: none;
+    }
+
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:8px;flex-wrap:wrap;gap:10px;
+    }
+    header h1{font-size:18px;margin:0}
+    header .actions{display:flex;gap:8px;flex-wrap:wrap;position:relative}
+
+    .controls-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+
+    button{
+      background:var(--glass);border:1px solid rgba(255,255,255,0.04);
+      color:var(--muted);padding:8px 14px;border-radius:8px;
+      cursor:pointer;transition:all 0.2s ease;
+    }
+    button:hover{background:rgba(255,255,255,0.05);}
+    button:active{transform:translateY(1px);}
+
+    /* --- status (default plain) --- */
+    #status { color:var(--muted); margin-bottom:12px; font-size:13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 40px); }
+
+    /* --- styled status bubble when active --- */
+    .status{padding:6px 8px;border-radius:8px;background:rgba(16,185,129,0.12);color:var(--success);font-weight:600}
+    .status.error{background:rgba(239,68,68,0.12);color:var(--error);}
+    .status.loading{background:rgba(6,182,212,0.12);color:var(--accent);}
+
+    /* small popups near delete button (we'll create them dynamically) */
+    .confirm-popup, .countdown-popup {
+      position: fixed; /* FIXED so scrolling won't move it */
+      z-index: 100000;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 10px;
+      border-radius: 8px;
+      min-width: 220px;
+      max-width: calc(100vw - 32px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      color: #e6eef6;
+      font-size: 13px;
+    }
+    .confirm-popup .row, .countdown-popup .row { display:flex; gap:8px; margin-top:8px; justify-content:flex-end; }
+    .confirm-popup .title { font-weight:700; margin-bottom:6px; }
+    .countdown-popup .count { font-weight:700; font-size:16px; margin-right:auto; align-self:center; }
+
+    /* --- Orders Grid --- */
+    #orders {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap:16px;
+    }
+
+    .order-card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;padding:14px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+
+    .confirmed-select{
+      font-weight:600;font-size:12px;
+      border-radius:8px;padding:4px 8px;
+      border:none;cursor:pointer;appearance:none;
+    }
+    .confirmed-select.yes{background:rgba(16,185,129,0.12);color:var(--success);}
+    .confirmed-select.no{background:rgba(239,68,68,0.12);color:var(--error);}
+    .confirmed-select.pending{background:rgba(6,182,212,0.12);color:var(--accent);}
+
+    .products{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+      gap:10px;
+    }
+    .product-item{
+      display:flex;gap:10px;padding:8px;border-radius:8px;
+      background:rgba(255,255,255,0.015);align-items:center;
+    }
+    .thumb{
+      width:60px;height:60px;background:#061226;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;
+    }
+    .thumb img{width:100%;height:100%;object-fit:contain}
+    .meta{flex:1;min-width:100px}
+    .meta h3{margin:0;font-size:14px}
+    .meta p{margin:2px 0 0 0;color:var(--muted);font-size:12px}
+    .footer{margin-top:10px;font-weight:600}
+
+    @media(max-width:600px){
+      body{padding:10px;}
+      header{flex-direction:column;align-items:flex-start;gap:8px}
+      .card-header{flex-direction:column;align-items:flex-start;}
+      #orders{grid-template-columns:1fr;}
+      .products{grid-template-columns:1fr;}
+      .thumb{width:80px;height:80px;}
+      .meta h3{font-size:15px}
+      .meta p{font-size:12px}
+    }
+
+    /* small saved bubble bottom-right */
+    .saved-bubble{position:fixed;bottom:14px;right:14px;padding:6px 8px;border-radius:8px;background:rgba(16,185,129,0.12);color:var(--success);font-weight:600;display:none}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📦 Orders Data Viewer</h1>
+    <div class="actions">
+      <button onclick="location.href='CMS.html'">Go to CMS</button>
+      <button id="refreshBtn">Refresh</button>
+      <button id="filterBtn">Show All</button>
+      <!-- Delete button //
+      <button id="deleteBtn" title="Delete all rows except header" style="background:rgba(239,68,68,0.06);color:#ffd6d6;border-color:rgba(239,68,68,0.12)">Delete</button>
+    </div>
+  </header>
+
+  <!-- status text (top-left). Initially plain muted text; becomes styled bubble when loading/error //
+  <div id="status" title=""></div>
+
+  <div class="controls-row"></div>
+
+  <div id="orders"></div>
+
+  <div class="saved-bubble" id="saveStatus">Saved</div>
+
+  <!-- loading-screen loader (injected from external file) //
+  <script>
+    (function(){
+      window.loadingScreenReady = new Promise((resolve) => {
+        fetch('../Google Sheet/loading-screen.html', {cache: 'no-store'})
+          .then(r => {
+            if (!r.ok) throw new Error('Could not load loading-screen.html');
+            return r.text();
+          })
+          .then(html => {
+            function inject() {
+              document.body.insertAdjacentHTML('afterbegin', html);
+              const overlay = document.getElementById('loading-overlay');
+              window.showLoading = function() {
+                if (overlay) {
+                  overlay.style.display = 'flex';
+                  overlay.classList.remove('ls-hidden');
+                  overlay.classList.add('ls-visible');
+                }
+              };
+              window.hideLoading = function() {
+                if (overlay) {
+                  overlay.classList.remove('ls-visible');
+                  overlay.classList.add('ls-hidden');
+                  const dur = parseFloat(getComputedStyle(overlay).getPropertyValue('--ls-fade-duration') || 0.45) * 1000;
+                  setTimeout(()=> overlay.style.display = 'none', dur + 50);
+                }
+              };
+              if (overlay) overlay.style.display = 'none';
+              resolve();
+            }
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', inject, {once:true});
+            } else {
+              inject();
+            }
+          })
+          .catch(err => {
+            console.warn('Loading screen failed to load:', err);
+            window.showLoading = window.hideLoading = function(){};
+            resolve();
+          });
+      });
+    })();
+  </script>
+
+  <script>
+    // ---------- configuration (hard-coded) ----------
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzCqlO3QvlBx2jcKh6ZOgmvVvlET1FEBlICy_doVt2WIxeYre8ryj9Z_zpf7g2QSLKr6Q/exec'; // <-- keep your web app URL
+    const SHEET_NAME = 'Sheet1'; // <-- sheet name
+
+    // ---------- state ----------
+    let ordersData = [];
+    let showAll = false;
+    const statusEl = document.getElementById('status');
+    const ordersContainer = document.getElementById('orders');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const filterBtn = document.getElementById('filterBtn');
+    const saveStatus = document.getElementById('saveStatus');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    // helpers to toggle status appearance
+    function setStatusTextPlain(text) {
+      statusEl.classList.remove('status','loading','error');
+      statusEl.textContent = text;
+      statusEl.style.color = 'var(--muted)';
+      statusEl.title = text;
+    }
+    function setStatusLoading(text) {
+      statusEl.textContent = text;
+      statusEl.style.color = '';
+      statusEl.classList.remove('error');
+      statusEl.classList.add('status','loading');
+      statusEl.title = text;
+    }
+    function setStatusError(text) {
+      statusEl.textContent = text;
+      statusEl.style.color = '';
+      statusEl.classList.remove('loading');
+      statusEl.classList.add('status','error');
+      statusEl.title = text;
+    }
+
+    // small saved bubble
+    function flashSaved() {
+      saveStatus.style.display = 'block';
+      setTimeout(()=> saveStatus.style.display = 'none', 1300);
+    }
+
+    // normalize confirmed
+    function normalizeConfirmed(raw) {
+      if (raw == null) return '';
+      const s = String(raw).trim().toLowerCase();
+      if (s === 'pending') return '';
+      return s;
+    }
+
+    // fetch & load orders (shows loading screen automatically)
+    async function loadFromSheet() {
+      await window.loadingScreenReady;
+      try { showLoading(); } catch(e){}
+      setStatusLoading('Fetching orders from Google Sheet...');
+      try {
+        const fullUrl = WEBAPP_URL + (WEBAPP_URL.includes('?') ? '&' : '?') + 'action=read&path=' + encodeURIComponent(SHEET_NAME);
+        const resp = await fetch(fullUrl, { method: 'GET', mode: 'cors' });
+        const text = await resp.text();
+        if (!text) {
+          setStatusError('Empty response from web app');
+          ordersData = [];
+          renderOrders();
+          return;
+        }
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (err) {
+          console.warn('Response not JSON:', text);
+          setStatusError('Response not JSON — check console');
+          ordersData = [];
+          renderOrders();
+          return;
+        }
+        if (!Array.isArray(parsed)) {
+          console.warn('Returned value is not an array', parsed);
+          setStatusError('Returned JSON is not an array');
+          ordersData = [];
+          renderOrders();
+          return;
+        }
+
+        // normalize
+        ordersData = parsed.map(item => {
+          const obj = Object.assign({}, item);
+          // find confirmed key
+          const keys = Object.keys(obj);
+          let rawConfirmed = '';
+          if (obj.hasOwnProperty('confirmed')) rawConfirmed = obj.confirmed;
+          else if (obj.hasOwnProperty('Confirmed')) rawConfirmed = obj.Confirmed;
+          else {
+            const k = keys.find(k => k.toLowerCase() === 'confirmed');
+            if (k) rawConfirmed = obj[k];
+          }
+          obj._confirmed = normalizeConfirmed(rawConfirmed);
+
+          // ensure __row
+          if (!obj.hasOwnProperty('__row')) {
+            if (obj.row) obj.__row = obj.row;
+            else if (obj.Row) obj.__row = obj.Row;
+            else {
+              const rowKey = keys.find(k => k.toLowerCase() === '__row' || k.toLowerCase() === 'row');
+              if (rowKey) obj.__row = obj[rowKey];
+            }
+          }
+          return obj;
+        });
+
+        setStatusTextPlain(`Loaded ${ordersData.length} orders.`);
+        renderOrders();
+      } catch (err) {
+        console.error(err);
+        setStatusError('Fetch error: ' + (err.message || err));
+      } finally {
+        try{ hideLoading(); } catch(e){}
+      }
+    }
+
+    // update confirmed in sheet
+    async function updateConfirmInSheet(sheetName, row, confirmedValue) {
+      const base = WEBAPP_URL;
+      if (!base) throw new Error('Web app URL not set');
+      const full = base + (base.includes('?') ? '&' : '?') + `action=updateConfirm&path=${encodeURIComponent(sheetName)}&row=${encodeURIComponent(row)}&confirmed=${encodeURIComponent(confirmedValue)}`;
+      const resp = await fetch(full, { method: 'GET', mode: 'cors' });
+      const txt = await resp.text();
+      let parsed;
+      try { parsed = JSON.parse(txt); } catch(e){ throw new Error('Update failed: ' + txt); }
+      if (!parsed || !parsed.success) throw new Error('Update failed: ' + JSON.stringify(parsed));
+      return parsed;
+    }
+
+    // call clearAll endpoint (confirm must be 1)
+    async function callClearAll() {
+      setStatusLoading('Sending delete request...');
+      try { showLoading(); } catch(e){}
+      try {
+        const base = WEBAPP_URL;
+        if (!base) throw new Error('Web app URL not set');
+        const full = base + (base.includes('?') ? '&' : '?') + `action=clearAll&path=${encodeURIComponent(SHEET_NAME)}&confirm=1`;
+
+        // DEBUG: log URL so you can paste to browser or share in console
+        console.log('[callClearAll] Request URL:', full);
+        // also show short text in status (not the entire long url)
+        setStatusTextPlain('Sending delete request to web app (see console for URL).');
+
+        const resp = await fetch(full, { method: 'GET', mode: 'cors', cache: 'no-store' });
+        const txt = await resp.text();
+        console.log('[callClearAll] Raw response:', txt);
+
+        // try parse json; if not, show raw text to user
+        let parsed;
+        try { parsed = JSON.parse(txt); } catch(e) {
+          // show the raw response so we can debug deployment/permission issues
+          setStatusError('Delete failed: unexpected response (check console).');
+          console.error('Delete response (not JSON):', txt);
+          // expose response in an alert so you can copy-paste quickly
+          alert('Delete response (not JSON):\n' + txt + '\n\nSee console for request URL.');
+          return { success: false, message: txt };
+        }
+
+        if (parsed && parsed.success) {
+          setStatusTextPlain(parsed.message || ('Deleted ' + (parsed.deleted || '?') + ' rows.'));
+          setTimeout(()=> { loadFromSheet(); }, 600);
+        } else {
+          setStatusError(parsed.message || ('Delete failed: ' + JSON.stringify(parsed)));
+          console.error('Delete parsed response:', parsed);
+          alert('Delete returned error:\n' + (parsed.message || JSON.stringify(parsed)));
+        }
+        return parsed;
+      } catch (err) {
+        console.error(err);
+        setStatusError('Delete request failed: ' + (err.message || err));
+        alert('Delete request failed: ' + (err.message || err) + '\nSee console for details.');
+        return { success: false, message: err.message || String(err) };
+      } finally {
+        try{ hideLoading(); } catch(e){}
+      }
+    }
+
+    // render cards
+    function renderOrders() {
+      ordersContainer.innerHTML = '';
+      if (!ordersData || ordersData.length === 0) {
+        ordersContainer.innerHTML = '<div class="muted">No orders to show. Click Refresh.</div>';
+        return;
+      }
+      ordersData.forEach(order => {
+        const confirmedValue = order._confirmed || '';
+        if (!showAll && confirmedValue !== '') return;
+
+        const titleRaw = (order.Title || order.title || '');
+        const imageRaw = (order.Image || order.image || '');
+        const priceRaw = (order.Price || order.price || '');
+        const variantRaw = (order.Variant || order.variant || '');
+
+        const titles = titleRaw ? String(titleRaw).split(/,\n?/) : [''];
+        const images = imageRaw ? String(imageRaw).split(/,\n?/) : [''];
+        const prices = priceRaw ? String(priceRaw).split(/,\n?/) : [''];
+        const variants = variantRaw ? String(variantRaw).split(/,\n?/) : [''];
+
+        let productsHTML = '';
+        for (let i = 0; i < titles.length; i++) {
+          const t = (titles[i] || '').trim();
+          const img = (images[i] || images[0] || '').trim();
+          const pr = (prices[i] || '').trim();
+          const vr = (variants[i] || '').trim();
+          productsHTML += `
+            <div class="product-item">
+              <div class="thumb"><img src="../image/${encodeURI(img)}" alt="" onerror="this.style.display='none'"></div>
+              <div class="meta">
+                <h3>${escapeHtml(t)}</h3>
+                <p>${escapeHtml(vr)} ${vr && pr ? ' | ' : ''} ${escapeHtml(pr)}</p>
+              </div>
+            </div>
+          `;
+        }
+
+        const displayTimestamp = order['Timestamp '] || order.Timestamp || order.timestamp || '';
+        const displayName = order.Name || order.name || '';
+        const phone = order['Phone Number'] || order['Phone number'] || order.phone || '';
+        const district = order['District & Upazila'] || order['District & upazila'] || order['district & upazila'] || '';
+        const street = order['Street Address'] || order['Street address'] || order.street || '';
+        const totalPrice = order['Total Price'] || order.total || order['TotalPrice'] || '';
+
+        let statusClass = 'pending';
+        if (confirmedValue === 'yes') statusClass = 'yes';
+        else if (confirmedValue === 'no') statusClass = 'no';
+
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        card.innerHTML = `
+          <div class="card-header">
+            <span>📅 ${displayTimestamp ? new Date(displayTimestamp).toLocaleString() : ''}</span>
+            <select class="confirmed-select ${statusClass}" data-row="${escapeHtml(order.__row || '')}">
+              <option value="" ${confirmedValue === '' ? 'selected' : ''}>pending</option>
+              <option value="yes" ${confirmedValue === 'yes' ? 'selected' : ''}>yes</option>
+              <option value="no" ${confirmedValue === 'no' ? 'selected' : ''}>no</option>
+            </select>
+          </div>
+          <p>👤 <b>${escapeHtml(displayName)}</b> | 📞 ${escapeHtml(phone)}</p>
+          <p>📍 ${escapeHtml(district)} | ${escapeHtml(street)}</p>
+          <p class="muted">🌍 Area: ${escapeHtml(order.Area || order.area || '')}</p>
+          <div class="products">${productsHTML}</div>
+          <p class="footer">💰 Total: ${escapeHtml(totalPrice)}</p>
+        `;
+
+        const sel = card.querySelector('.confirmed-select');
+        if (sel) {
+          sel.addEventListener('change', async () => {
+            const newVal = sel.value;
+            const rowId = sel.dataset.row;
+            // optimistic class
+            sel.classList.remove('yes','no','pending');
+            sel.classList.add(newVal === 'yes' ? 'yes' : newVal === 'no' ? 'no' : 'pending');
+            setStatusLoading('Updating row ' + rowId + '...');
+            try {
+              showLoading();
+              await updateConfirmInSheet(SHEET_NAME, rowId, newVal);
+              // update local model
+              const local = ordersData.find(o => String(o.__row) === String(rowId) || String(o.row) === String(rowId));
+              if (local) {
+                local._confirmed = newVal;
+                if (local.hasOwnProperty('Confirmed')) local.Confirmed = newVal;
+                if (local.hasOwnProperty('confirmed')) local.confirmed = newVal;
+              }
+              setStatusTextPlain('Updated row ' + rowId);
+              flashSaved();
+            } catch (err) {
+              console.error(err);
+              setStatusError('Update failed: ' + (err.message || err));
+              renderOrders(); // revert visual state
+            } finally {
+              try{ hideLoading(); } catch(e){}
+            }
+          });
+        }
+
+        ordersContainer.appendChild(card);
+      });
+
+      if (!ordersContainer.firstElementChild) {
+        ordersContainer.innerHTML = '<div class="muted">No orders matching filter.</div>';
+      }
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;');
+    }
+
+    // UI wiring
+    filterBtn.addEventListener('click', () => {
+      showAll = !showAll;
+      filterBtn.textContent = showAll ? 'Show Pending Only' : 'Show All';
+      renderOrders();
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      setStatusLoading('Refreshing data...');
+      loadFromSheet();
+    });
+
+    // ---------- Delete flow UI ----------
+    // Create and position a small popup next to delete button for confirm/cancel
+    let popupEl = null;
+    let countdownEl = null;
+    let countdownTimer = null;
+    let countdownValue = 5;
+    let pinnedPosition = null; // store viewport-based top/right when popup opens
+
+    function removePopup() {
+      if (popupEl && popupEl.parentNode) popupEl.parentNode.removeChild(popupEl);
+      popupEl = null;
+      countdownEl = null;
+      pinnedPosition = null;
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    }
+
+    // place a fixed popup anchored under the delete button's current viewport location.
+    // popup will be position:fixed so scrolling won't move it. On resize, we'll re-calc.
+    function positionPopupFixedUnderButton(popup, buttonRect) {
+      popup.style.position = 'fixed';
+      popup.style.visibility = 'hidden';
+      // ensure in DOM
+      if (!popup.parentNode) document.body.appendChild(popup);
+      // measure popup size
+      popup.style.left = '0px';
+      popup.style.top = '0px';
+      const pRect = popup.getBoundingClientRect();
+
+      // align right edge of popup with right edge of button (8px offset)
+      const gap = 8;
+      let top = Math.round(buttonRect.bottom + gap);
+      let right = Math.round(window.innerWidth - buttonRect.right + gap);
+
+      // Clamp to viewport: if popup would overflow bottom, move above button
+      if (top + pRect.height > window.innerHeight - 8) {
+        top = Math.round(buttonRect.top - pRect.height - gap);
+      }
+      if (top < 8) top = 8;
+
+      // Clamp right so popup not go off left
+      const maxRight = window.innerWidth - 8;
+      if (right < 8) right = 8;
+      // apply
+      popup.style.right = right + 'px';
+      popup.style.top = top + 'px';
+      popup.style.left = 'auto';
+      popup.style.visibility = 'visible';
+
+      // pin the used top/right so scrolling doesn't change it
+      pinnedPosition = { top: popup.style.top, right: popup.style.right };
+    }
+
+    function openConfirmPopup() {
+      removePopup();
+      const rect = deleteBtn.getBoundingClientRect();
+
+      popupEl = document.createElement('div');
+      popupEl.className = 'confirm-popup';
+      popupEl.style.cssText = 'backdrop-filter: blur(5px);';
+      popupEl.innerHTML = `
+        <div class="title">Delete all data?</div>
+        <div>Are you sure you want to remove all data rows (header will be preserved)?</div>
+        <div class="row">
+          <button id="confirmNo">Cancel</button>
+          <button id="confirmYes" style="background:rgba(239,68,68,0.06);color:#ffd6d6;border-color:rgba(239,68,68,0.12)">Delete</button>
+        </div>
+      `;
+
+      document.body.appendChild(popupEl);
+      positionPopupFixedUnderButton(popupEl, rect);
+
+      // handlers
+      popupEl.querySelector('#confirmNo').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        removePopup();
+      });
+      popupEl.querySelector('#confirmYes').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openCountdownPopup();
+      });
+    }
+
+    function openCountdownPopup() {
+      if (!popupEl) return;
+      // replace contents with countdown UI
+      popupEl.className = 'countdown-popup';
+      popupEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="count">Deleting in <span id="countVal">5</span>…</div>
+          <div style="margin-left:6px;color:var(--muted);font-size:12px">Click Cancel to abort</div>
+        </div>
+        <div class="row">
+          <button id="cancelDelete">Cancel</button>
+        </div>
+      `;
+      countdownEl = popupEl.querySelector('#countVal');
+      countdownValue = 5;
+      countdownEl.textContent = countdownValue;
+
+      // Reposition on resize only (so scroll doesn't affect)
+      const rect = deleteBtn.getBoundingClientRect();
+      positionPopupFixedUnderButton(popupEl, rect);
+
+      // start countdown
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+      countdownTimer = setInterval(async () => {
+        countdownValue--;
+        if (countdownEl) countdownEl.textContent = countdownValue;
+        if (countdownValue <= 0) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          // perform delete
+          try {
+            removePopup(); // hide immediately
+            setStatusLoading('Deleting all data (header preserved)...');
+            await callClearAll(); // this will reload sheet afterwards
+          } catch (err) {
+            console.error('Delete failed', err);
+            setStatusError('Delete failed: ' + (err.message || err));
+          }
+        }
+      }, 1000);
+
+      // cancel handler
+      const cancelBtn = popupEl.querySelector('#cancelDelete');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+          }
+          removePopup();
+          setStatusTextPlain('Deletion cancelled.');
+        });
+      }
+    }
+
+    // attach delete click
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (popupEl) {
+        removePopup();
+        return;
+      }
+      openConfirmPopup();
+    });
+
+    // close popup when clicking anywhere outside
+    document.addEventListener('click', (evt) => {
+      if (!popupEl) return;
+      if (evt.target === deleteBtn) return;
+      if (popupEl.contains(evt.target)) return;
+      removePopup();
+    });
+
+    // reposition popup on resize (keeps it under the delete button)
+    window.addEventListener('resize', () => {
+      if (!popupEl) return;
+      const rect = deleteBtn.getBoundingClientRect();
+      positionPopupFixedUnderButton(popupEl, rect);
+    });
+
+    // handle escape key to close popup
+    document.addEventListener('keydown', (evt) => {
+      if (evt.key === 'Escape' && popupEl) {
+        removePopup();
+      }
+    });
+
+    // auto-start loading on open
+    window.addEventListener('load', () => {
+      setStatusLoading('Loading orders...');
+      loadFromSheet();
+    });
+  </script>
+
+
+</body>
+</html> -->
