@@ -66,6 +66,31 @@
     .confirm-popup .title { font-weight:700; margin-bottom:6px; }
     .countdown-popup .count { font-weight:700; font-size:16px; margin-right:auto; align-self:center; }
 
+    /* ---------- Delivery badge styling ---------- */
+    .delivery-badge {
+      display:inline-block;
+      font-weight:700;
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:8px;
+      min-width:64px;
+      text-align:center;
+      letter-spacing:0.2px;
+    }
+    
+    /* Blue / accent (Payment & Unknown) */
+    .delivery-payment,
+    .delivery-unknown {
+      background: rgba(16,185,129,0.12);
+      color: var(--success);
+    }
+    
+    /* Red (Free) */
+    .delivery-free {
+      background: rgba(239,68,68,0.12);
+      color: var(--error);
+    }
+
     /* --- Orders Grid --- */
     #orders {
       display:grid;
@@ -288,31 +313,89 @@
           return;
         }
 
-        // normalize
-        ordersData = parsed.map(item => {
-          const obj = Object.assign({}, item);
-          // find confirmed key
-          const keys = Object.keys(obj);
-          let rawConfirmed = '';
-          if (obj.hasOwnProperty('confirmed')) rawConfirmed = obj.confirmed;
-          else if (obj.hasOwnProperty('Confirmed')) rawConfirmed = obj.Confirmed;
-          else {
-            const k = keys.find(k => k.toLowerCase() === 'confirmed');
-            if (k) rawConfirmed = obj[k];
-          }
-          obj._confirmed = normalizeConfirmed(rawConfirmed);
+       // normalize
+       ordersData = parsed.map(item => {
+         const obj = Object.assign({}, item);
+         // keys cache
+         const keys = Object.keys(obj || {});
+       
+         // --- confirmed (existing) ---
+         let rawConfirmed = '';
+         if (obj.hasOwnProperty('confirmed')) rawConfirmed = obj.confirmed;
+         else if (obj.hasOwnProperty('Confirmed')) rawConfirmed = obj.Confirmed;
+         else {
+           const k = keys.find(k => k.toLowerCase() === 'confirmed');
+           if (k) rawConfirmed = obj[k];
+         }
+         obj._confirmed = normalizeConfirmed(rawConfirmed);
+       
+         // --- __row (existing) ---
+         if (!obj.hasOwnProperty('__row')) {
+           if (obj.row) obj.__row = obj.row;
+           else if (obj.Row) obj.__row = obj.Row;
+           else {
+             const rowKey = keys.find(k => k.toLowerCase() === '__row' || k.toLowerCase() === 'row');
+             if (rowKey) obj.__row = obj[rowKey];
+           }
+         }
+       
+         // --- DELIVERY detection (NEW) ---
+         // 1) Try direct properties (case-insensitive)
+         let rawDelivery = '';
+         if (obj.hasOwnProperty('deliveryType')) rawDelivery = obj.deliveryType;
+         else {
+           const dKey = keys.find(k => k.toLowerCase() === 'deliverytype' || k.toLowerCase() === 'delivery type' || k.toLowerCase() === 'delivery');
+           if (dKey) rawDelivery = obj[dKey];
+         }
+       
+         // 2) If not found, try to read OptionInfo / optionInformation text (fallback)
+         if ((!rawDelivery || String(rawDelivery).trim() === '') && (obj.optionInformation || obj.OptionInfo || obj['OptionInfo'])) {
+           const oi = obj.optionInformation || obj.OptionInfo || obj['OptionInfo'];
+           try {
+             if (typeof oi === 'object') {
+               // object form: try common keys
+               rawDelivery = oi.deliveryType || oi.deliverytype || oi.deliveryFee || oi.deliveryfee || '';
+             } else {
+               // string form: try to find deliveryFee or deliveryType tokens, e.g. "deliveryFee: 000"
+               const s = String(oi);
+               const m = s.match(/delivery(type|fee)?\s*[:=]\s*("?)([^,\n]+)/i);
+               if (m && m[3]) rawDelivery = m[3].trim();
+             }
+           } catch(e) {
+             // ignore
+           }
+         }
+       
+         // 3) Normalize to canonical values: "Free" / "Payment" / ''
+         let deliveryNorm = '';
+         if (rawDelivery != null && String(rawDelivery).trim() !== '') {
+           const s = String(rawDelivery).trim();
+           const lower = s.toLowerCase();
+       
+           if (lower === 'free' || lower === 'free delivery' || s === '000' || s === '0') {
+             deliveryNorm = 'Free';
+           } else if (lower === 'payment' || lower === 'paid' || lower === 'paid delivery') {
+             deliveryNorm = 'Payment';
+           } else {
+             // try numeric interpretation like "৳0.00" or "0.00"
+             const numeric = Number(String(s).replace(/[^0-9.]/g, ''));
+             if (isFinite(numeric)) {
+               deliveryNorm = numeric === 0 ? 'Free' : 'Payment';
+             } else {
+               // if text contains 'free' anywhere, treat as Free
+               if (lower.indexOf('free') !== -1) deliveryNorm = 'Free';
+               else if (lower.indexOf('pay') !== -1 || lower.indexOf('৳') !== -1) deliveryNorm = 'Payment';
+               else deliveryNorm = ''; // unknown
+             }
+           }
+         } else {
+           deliveryNorm = ''; // unknown
+         }
+       
+         obj._delivery = deliveryNorm; // NEW: _delivery will be 'Free' / 'Payment' / ''
+         return obj;
+       });
 
-          // ensure __row
-          if (!obj.hasOwnProperty('__row')) {
-            if (obj.row) obj.__row = obj.row;
-            else if (obj.Row) obj.__row = obj.Row;
-            else {
-              const rowKey = keys.find(k => k.toLowerCase() === '__row' || k.toLowerCase() === 'row');
-              if (rowKey) obj.__row = obj[rowKey];
-            }
-          }
-          return obj;
-        });
 
         setStatusTextPlain(`Loaded ${ordersData.length} orders.`);
         renderOrders();
@@ -465,23 +548,37 @@
         if (confirmedValue === 'yes') statusClass = 'yes';
         else if (confirmedValue === 'no') statusClass = 'no';
 
-        const card = document.createElement('div');
-        card.className = 'order-card';
-        card.innerHTML = `
-          <div class="card-header">
-            <span>📅 ${displayTimestamp ? new Date(displayTimestamp).toLocaleString() : ''}</span>
-            <select class="confirmed-select ${statusClass}" data-row="${escapeHtml(order.__row || '')}">
-              <option value="" ${confirmedValue === '' ? 'selected' : ''}>pending</option>
-              <option value="yes" ${confirmedValue === 'yes' ? 'selected' : ''}>yes</option>
-              <option value="no" ${confirmedValue === 'no' ? 'selected' : ''}>no</option>
-            </select>
-          </div>
-          <p>👤 <b>${escapeHtml(displayName)}</b> | 📞 ${escapeHtml(phone)}</p>
-          <p>📍 ${escapeHtml(district)} | ${escapeHtml(street)}</p>
-          <p class="muted">🌍 Area: ${escapeHtml(order.Area || order.area || '')}</p>
-          <div class="products">${productsHTML}</div>
-          <p class="footer">💰 Total: ${escapeHtml(totalPrice)}</p>
-        `;
+       // decide delivery label & CSS class (put this right before creating the card)
+       const deliveryLabel = (order._delivery && String(order._delivery).trim()) ? String(order._delivery).trim() : 'Unknown';
+       let deliveryClass;
+       const lowerDel = deliveryLabel.toLowerCase();
+       if (lowerDel === 'free') deliveryClass = 'delivery-free';
+       else if (lowerDel === 'payment') deliveryClass = 'delivery-payment';
+       else deliveryClass = 'delivery-unknown';
+       
+       // create card (replaces your existing card creation)
+       const card = document.createElement('div');
+       card.className = 'order-card';
+       card.innerHTML = `
+         <div class="card-header">
+           <span>📅 ${displayTimestamp ? new Date(displayTimestamp).toLocaleString() : ''}</span>
+           <select class="confirmed-select ${statusClass}" data-row="${escapeHtml(order.__row || '')}">
+             <option value="" ${confirmedValue === '' ? 'selected' : ''}>pending</option>
+             <option value="yes" ${confirmedValue === 'yes' ? 'selected' : ''}>yes</option>
+             <option value="no" ${confirmedValue === 'no' ? 'selected' : ''}>no</option>
+           </select>
+         </div>
+         <p>👤 <b>${escapeHtml(displayName)}</b> | 📞 ${escapeHtml(phone)}</p>
+         <p>📍 ${escapeHtml(district)} | ${escapeHtml(street)}</p>
+         <p class="muted">🌍 Area: ${escapeHtml(order.Area || order.area || '')}</p>
+         <div class="products">${productsHTML}</div>
+       
+         <!-- Delivery badge: Free (red), Payment (blue), Unknown (blue) -->
+         <p class="muted">🚚 Delivery: <span class="delivery-badge ${deliveryClass}">${escapeHtml(deliveryLabel)}</span></p>
+       
+         <p class="footer">💰 Total: ${escapeHtml(totalPrice)}</p>
+       `;
+
 
         const sel = card.querySelector('.confirmed-select');
         if (sel) {
@@ -557,74 +654,66 @@
       pinnedPosition = null;
       if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     }
-
-    // place a fixed popup anchored under the delete button's current viewport location.
+    
     // popup will be position:fixed so scrolling won't move it. On resize, we'll re-calc.
-function positionPopupFixedUnderButton(popup, buttonRect) {
-  popup.style.position = 'fixed';
-  popup.style.visibility = 'hidden';
-  // ensure in DOM
-  if (!popup.parentNode) document.body.appendChild(popup);
-  // measure popup size
-  popup.style.left = '0px';
-  popup.style.top = '0px';
-  const pRect = popup.getBoundingClientRect();
-
-  const gap = 8;
-  let top, right;
-
-  // Mobile layout (screen width <= 600px)
-  if (window.innerWidth <= 600) {
-    // Position under the delete button but align to right side of screen
-    top = Math.round(buttonRect.bottom + gap);
-    
-    // Position from right edge with some margin
-    right = 16; // 16px from right edge
-    
-    // If popup would go off bottom, position above button instead
-    if (top + pRect.height > window.innerHeight - 8) {
-      top = Math.round(buttonRect.top - pRect.height - gap);
-    }
-    
-    // Ensure it doesn't go off top
-    if (top < 8) top = 8;
-    
-    // Ensure it doesn't go off right (though with fixed right position, this shouldn't happen)
-    const maxRight = window.innerWidth - pRect.width - 8;
-    if (right > maxRight) right = maxRight;
-  } 
-  // Desktop layout (original behavior)
-  else {
-    // align right edge of popup with right edge of button (8px offset)
-    top = Math.round(buttonRect.bottom + gap);
-    right = Math.round(window.innerWidth - buttonRect.right + gap);
-
-    // Clamp to viewport: if popup would overflow bottom, move above button
-    if (top + pRect.height > window.innerHeight - 8) {
-      top = Math.round(buttonRect.top - pRect.height - gap);
-    }
-    if (top < 8) top = 8;
-
-    // Clamp right so popup not go off left
-    if (right < 8) right = 8;
-  }
-
-  // apply positioning
-  popup.style.right = right + 'px';
-  popup.style.top = top + 'px';
-  popup.style.left = 'auto';
-  popup.style.visibility = 'visible';
-
-  // pin the used top/right so scrolling doesn't change it
-  pinnedPosition = { top: popup.style.top, right: popup.style.right };
-}
-
-
-
-
-
-
-
+   function positionPopupFixedUnderButton(popup, buttonRect) {
+     popup.style.position = 'fixed';
+     popup.style.visibility = 'hidden';
+     // ensure in DOM
+     if (!popup.parentNode) document.body.appendChild(popup);
+     // measure popup size
+     popup.style.left = '0px';
+     popup.style.top = '0px';
+     const pRect = popup.getBoundingClientRect();
+   
+     const gap = 8;
+     let top, right;
+   
+     // Mobile layout (screen width <= 600px)
+     if (window.innerWidth <= 600) {
+       // Position under the delete button but align to right side of screen
+       top = Math.round(buttonRect.bottom + gap);
+       
+       // Position from right edge with some margin
+       right = 16; // 16px from right edge
+       
+       // If popup would go off bottom, position above button instead
+       if (top + pRect.height > window.innerHeight - 8) {
+         top = Math.round(buttonRect.top - pRect.height - gap);
+       }
+       
+       // Ensure it doesn't go off top
+       if (top < 8) top = 8;
+       
+       // Ensure it doesn't go off right (though with fixed right position, this shouldn't happen)
+       const maxRight = window.innerWidth - pRect.width - 8;
+       if (right > maxRight) right = maxRight;
+     } 
+     // Desktop layout (original behavior)
+     else {
+       // align right edge of popup with right edge of button (8px offset)
+       top = Math.round(buttonRect.bottom + gap);
+       right = Math.round(window.innerWidth - buttonRect.right + gap);
+   
+       // Clamp to viewport: if popup would overflow bottom, move above button
+       if (top + pRect.height > window.innerHeight - 8) {
+         top = Math.round(buttonRect.top - pRect.height - gap);
+       }
+       if (top < 8) top = 8;
+   
+       // Clamp right so popup not go off left
+       if (right < 8) right = 8;
+     }
+   
+     // apply positioning
+     popup.style.right = right + 'px';
+     popup.style.top = top + 'px';
+     popup.style.left = 'auto';
+     popup.style.visibility = 'visible';
+   
+     // pin the used top/right so scrolling doesn't change it
+     pinnedPosition = { top: popup.style.top, right: popup.style.right };
+   }
 
     function openConfirmPopup() {
       removePopup();
