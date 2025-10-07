@@ -1,0 +1,20 @@
+{
+  "freeDeliveryThreshold": 5,
+  "productRules": {
+    "product1": {
+      "freeDelivery": true,
+      "minQuantityForFree": 3,
+      "hidePrice": false
+    },
+    "product2": {
+      "freeDelivery": false,
+      "minQuantityForFree": 5,
+      "hidePrice": false
+    },
+    "product3": {
+      "freeDelivery": true,
+      "minQuantityForFree": 2,
+      "hidePrice": false
+    }
+  }
+}

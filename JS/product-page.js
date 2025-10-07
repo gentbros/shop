@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
 
-
   CartUtils.updateCartCount();
 
   if (!productId) {
@@ -115,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
     ` : '';
 
-    // Full HTML
+    // Full HTML (added Buy Now button next to Add to Cart)
     const productHTML = `
       <div class="product-details">
         ${galleryHTML}
@@ -151,6 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <button class="add-to-cart-btn" disabled>
               ${hasSizeSection ? 'Select color & size' : 'Select color'}
             </button>
+            <button class="buy-now-btn" disabled>Buy Now</button>
           </div>
           <div class="product-description">
             <h3>Description</h3>
@@ -179,6 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedVariant = null;
     const quantityInput = document.querySelector('.quantity-input');
     const addToCartBtn = document.querySelector('.add-to-cart-btn');
+    const buyNowBtn = document.querySelector('.buy-now-btn'); // new buy now button
     const stockStatus = document.querySelector('.stock-status');
     const sizeSectionEl = document.querySelector('.size-selection');
     const sizeContainer = sizeSectionEl ? sizeSectionEl.querySelector('.size-options') : null;
@@ -238,8 +239,13 @@ document.addEventListener('DOMContentLoaded', function () {
       quantityInput.disabled = false;
       quantityInput.max = selectedVariant.stock;
       quantityInput.value = 1;
-      addToCartBtn.disabled = false;
-      addToCartBtn.textContent = 'Add to Cart';
+      if (addToCartBtn) {
+        addToCartBtn.disabled = false;
+        addToCartBtn.textContent = 'Add to Cart';
+      }
+      if (buyNowBtn) {
+        buyNowBtn.disabled = false;
+      }
     }
 
     // Quantity controls
@@ -263,81 +269,122 @@ document.addEventListener('DOMContentLoaded', function () {
       if (parseInt(this.value) < 1) this.value = 1;
     });
 
+    // Add to cart handler (existing behavior)
+    if (addToCartBtn) {
+      addToCartBtn.addEventListener('click', function () {
+        if (!selectedVariant || this.disabled) return;
 
-    
+        const quantity = parseInt(quantityInput.value, 10);
+        if (quantity > selectedVariant.stock) {
+          let detailMsg = selectedVariant.colorName || '';
+          if (selectedVariant.size) detailMsg += detailMsg ? `, Size ${selectedVariant.size}` : `Size ${selectedVariant.size}`;
+          alert(`Sorry, you cannot add more of this product${detailMsg ? ` in ${detailMsg}` : ''}.`);
+          return;
+        }
 
+        // --- use shared cart helpers ---
+        const cart = CartUtils.getCart();
 
+        // same product + color + size = same line item
+        const existing = cart.find(
+          (it) =>
+            it.id === product.id &&
+            it.color === selectedVariant.colorName &&
+            it.size === selectedVariant.size
+        );
 
+        if (existing) {
+          existing.quantity = Math.min(existing.quantity + quantity, selectedVariant.stock);
+        } else {
+          cart.push({
+            id: product.id,
+            title: product.title,
+            color: selectedVariant.colorName,
+            size: selectedVariant.size,
+            quantity,
+            price: product.price,
+            stock: selectedVariant.stock,
+            image: product.image
+          });
+        }
 
+        CartUtils.saveCart(cart);
+        CartUtils.updateCartCount();
 
+        // --- Toast Feedback ---
+        const details = [
+          selectedVariant.colorName,
+          selectedVariant.size ? `Size ${selectedVariant.size}` : null
+        ].filter(Boolean).join(', ');
 
+        showToast(`${quantity} ${product.title}${details ? ` (${details})` : ''} added to cart!`);
 
-addToCartBtn.addEventListener('click', function () {
-  if (!selectedVariant || this.disabled) return;
+        // --- Prevent double clicks for 1 second ---
+        this.disabled = true;
+        setTimeout(() => {
+          this.disabled = false;
+        }, 1000);
+      });
+    }
 
-  const quantity = parseInt(quantityInput.value, 10);
-  if (quantity > selectedVariant.stock) {
-    let detailMsg = selectedVariant.colorName || '';
-    if (selectedVariant.size) detailMsg += detailMsg ? `, Size ${selectedVariant.size}` : `Size ${selectedVariant.size}`;
-    alert(`Sorry, you cannot add more of this product${detailMsg ? ` in ${detailMsg}` : ''}.`);
-    return;
-  }
+    // Buy Now handler (adds the same item to cart then redirects to cart.html)
+    if (buyNowBtn) {
+      buyNowBtn.addEventListener('click', function () {
+        if (!selectedVariant || this.disabled) return;
 
-  // --- use shared cart helpers ---
-  const cart = CartUtils.getCart();
+        const quantity = parseInt(quantityInput.value, 10);
+        if (quantity > selectedVariant.stock) {
+          let detailMsg = selectedVariant.colorName || '';
+          if (selectedVariant.size) detailMsg += detailMsg ? `, Size ${selectedVariant.size}` : `Size ${selectedVariant.size}`;
+          alert(`Sorry, you cannot buy more of this product${detailMsg ? ` in ${detailMsg}` : ''}.`);
+          return;
+        }
 
-  // same product + color + size = same line item
-  const existing = cart.find(
-    (it) =>
-      it.id === product.id &&
-      it.color === selectedVariant.colorName &&
-      it.size === selectedVariant.size
-  );
+        // --- add to cart using shared helpers ---
+        const cart = CartUtils.getCart();
 
-  if (existing) {
-    existing.quantity = Math.min(existing.quantity + quantity, selectedVariant.stock);
-  } else {
-    cart.push({
-      id: product.id,
-      title: product.title,
-      color: selectedVariant.colorName,
-      size: selectedVariant.size,
-      quantity,
-      price: product.price,
-      stock: selectedVariant.stock,
-      image: product.image
-    });
-  }
+        const existing = cart.find(
+          (it) =>
+            it.id === product.id &&
+            it.color === selectedVariant.colorName &&
+            it.size === selectedVariant.size
+        );
 
-  CartUtils.saveCart(cart);
-  CartUtils.updateCartCount();
+        if (existing) {
+          existing.quantity = Math.min(existing.quantity + quantity, selectedVariant.stock);
+        } else {
+          cart.push({
+            id: product.id,
+            title: product.title,
+            color: selectedVariant.colorName,
+            size: selectedVariant.size,
+            quantity,
+            price: product.price,
+            stock: selectedVariant.stock,
+            image: product.image
+          });
+        }
 
-  // --- Toast Feedback ---
-  const details = [
-    selectedVariant.colorName,
-    selectedVariant.size ? `Size ${selectedVariant.size}` : null
-  ].filter(Boolean).join(', ');
+        CartUtils.saveCart(cart);
+        CartUtils.updateCartCount();
 
-  showToast(`${quantity} ${product.title}${details ? ` (${details})` : ''} added to cart!`);
+        const details = [
+          selectedVariant.colorName,
+          selectedVariant.size ? `Size ${selectedVariant.size}` : null
+        ].filter(Boolean).join(', ');
 
-  // --- Prevent double clicks for 1 second ---
-  this.disabled = true;
-  setTimeout(() => {
-    this.disabled = false;
-  }, 1000);
-});
+        showToast(`${quantity} ${product.title}${details ? ` (${details})` : ''} added to cart!`);
 
+        // prevent double clicks briefly
+        this.disabled = true;
+        setTimeout(() => {
+          this.disabled = false;
+        }, 1000);
 
-
-
-  // feedback 
-// feedback
-
-
-
-
-
-
+        // redirect to cart page
+        window.location.href = 'cart.html';
+      });
+    }
 
     // --- GALLERY FUNCTIONS ---
     function initImageGallery(images) {
@@ -443,54 +490,38 @@ addToCartBtn.addEventListener('click', function () {
 
   }
 
+  // --- Toast Notification ---
+  function showToast(message) {
+    // Remove any existing toast first
+    const existingToast = document.getElementById('toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
 
+    // Create a new toast element
+    const toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'toast show';
+    toast.textContent = message;
+    document.body.appendChild(toast);
 
+    // Auto-close in 1 second
+    const autoClose = setTimeout(() => {
+      toast.classList.remove('show');
+      toast.remove();
+    }, 1000);
 
+    // Close immediately if user clicks anywhere
+    function hideToast() {
+      clearTimeout(autoClose);
+      toast.classList.remove('show');
+      toast.remove();
+      document.removeEventListener('click', hideToast);
+    }
 
-
-
-
-// --- Toast Notification ---
-function showToast(message) {
-  // Remove any existing toast first
-  const existingToast = document.getElementById('toast');
-  if (existingToast) {
-    existingToast.remove();
+    setTimeout(() => {
+      document.addEventListener('click', hideToast, { once: true });
+    }, 50);
   }
-
-  // Create a new toast element
-  const toast = document.createElement('div');
-  toast.id = 'toast';
-  toast.className = 'toast show';
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  // Auto-close in 1 second
-  const autoClose = setTimeout(() => {
-    toast.classList.remove('show');
-    toast.remove();
-  }, 1000);
-
-  // Close immediately if user clicks anywhere
-  function hideToast() {
-    clearTimeout(autoClose);
-    toast.classList.remove('show');
-    toast.remove();
-    document.removeEventListener('click', hideToast);
-  }
-
-  setTimeout(() => {
-    document.addEventListener('click', hideToast, { once: true });
-  }, 50);
-}
-
-
-
 
 });
-
-
-
-
-
-image

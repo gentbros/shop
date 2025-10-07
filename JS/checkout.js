@@ -1,7 +1,7 @@
 
 (function () {
   // --- CONFIG ---
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWVKunzl_CeayAi7-whRG0C3X101xLBFDoojFilfwdVegwks-cpdpsasbhb8oJs43C5A/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsHCt2UGAo8Zqwu4IHzF2H_rC69Zc1hXqeikTlU91_YoPQWry04Y1BzNoX5QKuaIkDaQ/exec";
 
   // --- DATA (district -> upazila) ---
     const data = {
@@ -122,7 +122,16 @@
 
   // --- Auto-save checkout info to localStorage ---
   function saveCheckoutData() {
-    const checkoutData = {
+    // try to get existing checkoutData (from CartUtils if present, otherwise from localStorage)
+    let existing = null;
+    if (typeof CartUtils !== "undefined" && CartUtils.getCheckoutData) {
+      existing = CartUtils.getCheckoutData() || {};
+    } else {
+      try { existing = JSON.parse(localStorage.getItem("checkoutData")) || {}; } catch { existing = {}; }
+    }
+  
+    // Build merged object (preserve existing keys like deliveryFee, deliveryType, cart, total, etc.)
+    const merged = Object.assign({}, existing, {
       Name: fullNameInput.value.trim(),
       PhoneNumber: phoneNumberInput.value.trim(),
       StreetAddress: streetAddressInput.value.trim(),
@@ -130,9 +139,20 @@
         District: selectedDistrict,
         Upazila: selectedUpazila
       }
-    };
-    localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
+    });
+  
+    // Save via CartUtils if possible (keeps a single API), otherwise fallback to localStorage
+    if (typeof CartUtils !== "undefined" && CartUtils.saveCheckoutData) {
+      CartUtils.saveCheckoutData(merged);
+    } else {
+      try {
+        localStorage.setItem("checkoutData", JSON.stringify(merged));
+      } catch (err) {
+        console.error("Failed to persist checkoutData:", err);
+      }
+    }
   }
+
 
   // Save on typing
   [fullNameInput, phoneNumberInput, streetAddressInput].forEach(input => {
@@ -276,6 +296,43 @@
 
     const cart = (typeof CartUtils !== "undefined" && CartUtils.getCart) ? CartUtils.getCart() : [];
     const delivery = (typeof CartUtils !== "undefined" && CartUtils.getDeliveryChoice) ? CartUtils.getDeliveryChoice() : "unknown";
+    
+
+
+
+
+
+    // Get delivery type from checkout data - FIXED LOGIC
+
+    let deliveryType = "Payment"; // default
+    const checkoutData = (typeof CartUtils !== "undefined" && CartUtils.getCheckoutData) ? CartUtils.getCheckoutData() : null;
+    
+    if (checkoutData) {
+      // normalize deliveryType sent from CartUtils (if any)
+      const deliveryTypeRaw = String(checkoutData.deliveryType || "").trim().toLowerCase();
+    
+      // Determine if deliveryFee property actually exists and has a non-empty value
+      const hasFeeProp = Object.prototype.hasOwnProperty.call(checkoutData, "deliveryFee");
+      const feeRaw = hasFeeProp ? checkoutData.deliveryFee : null;
+      let feeNumber = null;
+    
+      if (feeRaw !== null && feeRaw !== undefined && String(feeRaw).trim() !== "") {
+        const parsed = Number(String(feeRaw).replace(/[^0-9.]/g, ""));
+        if (isFinite(parsed)) feeNumber = parsed;
+      }
+    
+      // Decide: explicit "free" wins; otherwise only consider numeric zero when fee is present
+      if (deliveryTypeRaw === "free") {
+        deliveryType = "Free";
+      } else if (feeNumber !== null && feeNumber === 0) {
+        deliveryType = "Free";
+      } else {
+        deliveryType = "Payment";
+      }
+    }
+    console.log("Sending deliveryType to Google Sheets:", deliveryType); // Debug log
+
+    console.log("Sending deliveryType to Google Sheets:", deliveryType); // Debug log
 
     const fullName = fullNameInput.value.trim();
     const phoneNumber = phoneNumberInput.value.trim();
@@ -317,7 +374,8 @@
       StreetAddress: streetAddress,
       products,
       districtData,
-      optionInformation
+      optionInformation,
+      deliveryType: deliveryType // This will now correctly send "Free" or "Payment"
     });
 
     const submitBtn = checkoutForm.querySelector('button[type="submit"]');
@@ -349,7 +407,8 @@
           AdditionalNotes: additionalNotes,
           CouponCode: couponCode,
           cart: cart,
-          deliveryChoice: delivery
+          deliveryChoice: delivery,
+          deliveryType: deliveryType // Store the correct delivery type
         };
         sessionStorage.setItem("tempCheckout", JSON.stringify(tempCheckout));
 
@@ -370,6 +429,3 @@
   });
 
 })();
-
-
-
