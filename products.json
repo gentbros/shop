@@ -4,14 +4,14 @@
     "title": "White Demon Slayer t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
-      "anime", 
+      "anime",
       "demon slayer",
       "drop-shoulder",
       "t-shirt"
     ],
     "image": "button-image1.png",
     "images": [
-      "cover 2.jpg",
+      "button-image1.png",
       "button-image2.png"
     ],
     "price": 399,
@@ -25,38 +25,64 @@
       "drop shoulder"
     ],
     "mediaGallery": [
-    { "type": "video", "src": "sample-video.mp4" },
-    { "type": "image", "src": "button-image1.png" },
-    { "type": "image", "src": "button-image2.png" }
-  ],
-  "variants": [
-    {
-      "color": "#fff",
-      "colorName": "White",
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    },
-    {
-      "color": "#000",
-      "colorName": "Black",
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    }
-  ]
-
+      {
+        "type": "video",
+        "src": "sample-video.mp4"
+      },
+      {
+        "type": "image",
+        "src": "button-image1.png"
+      },
+      {
+        "type": "image",
+        "src": "button-image2.png"
+      }
+    ],
+    "variants": [
+      {
+        "color": "#fff",
+        "colorName": "White",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      },
+      {
+        "color": "#000",
+        "colorName": "Black",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "product2",
     "title": "Black one piece t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
-      "anime", 
+      "anime",
       "one piece",
       "drop-shoulder",
       "t-shirt"
@@ -77,38 +103,64 @@
       "drop shoulder"
     ],
     "mediaGallery": [
-    { "type": "video", "src": "sample-video.mp4" },
-    { "type": "image", "src": "button-image4.png" },
-    { "type": "image", "src": "button-image3.png" }
-  ],
-  "variants": [
-    {
-      "color": "#000",
-      "colorName": "Black",
-
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    },
-    {
-      "color": "#fff",
-      "colorName": "White",
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    }
-  ]
+      {
+        "type": "video",
+        "src": "sample-video.mp4"
+      },
+      {
+        "type": "image",
+        "src": "button-image4.png"
+      },
+      {
+        "type": "image",
+        "src": "button-image3.png"
+      }
+    ],
+    "variants": [
+      {
+        "color": "#000",
+        "colorName": "Black",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      },
+      {
+        "color": "#fff",
+        "colorName": "White",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "product3",
     "title": "Black Demon Slayer t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
-      "anime", 
+      "anime",
       "demon slayer",
       "drop-shoulder",
       "t-shirt"
@@ -129,40 +181,64 @@
       "drop shoulder"
     ],
     "mediaGallery": [
-    { "type": "video", "src": "sample-video.mp4" },
-    { "type": "image", "src": "button-image1.png" },
-    { "type": "image", "src": "button-image2.png" }
-  ],
-
-  "variants": [
-    {
-      "color": "#000",
-      "colorName": "Black",
-
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    },
-    {
-      "color": "#fff",
-      "colorName": "White",
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    }
-  ]
-
+      {
+        "type": "video",
+        "src": "sample-video.mp4"
+      },
+      {
+        "type": "image",
+        "src": "button-image1.png"
+      },
+      {
+        "type": "image",
+        "src": "button-image2.png"
+      }
+    ],
+    "variants": [
+      {
+        "color": "#000",
+        "colorName": "Black",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      },
+      {
+        "color": "#fff",
+        "colorName": "White",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      }
+    ]
   },
-    {
+  {
     "id": "product4",
     "title": "white one piece t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
-      "anime", 
+      "anime",
       "one piece",
       "drop-shoulder",
       "t-shirt"
@@ -172,7 +248,7 @@
       "button-image3.png",
       "button-image4.png"
     ],
-    "price": 299,
+    "price": 399,
     "originalPrice": 450,
     "rating": "★★★★★",
     "reviews": 12,
@@ -183,35 +259,56 @@
       "drop shoulder"
     ],
     "mediaGallery": [
-    { "type": "video", "src": "sample-video.mp4" },
-    { "type": "image", "src": "button-image1.png" },
-    { "type": "image", "src": "button-image2.png" }
-  ],
-
-  "variants": [
-    {
-      "color": "#000",
-      "colorName": "Black",
-
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    },
-    {
-      "color": "#fff",
-      "colorName": "White",
-      "sizes": [
-        { "size": "S", "stock": 15 },
-        { "size": "M", "stock": 15 },
-        { "size": "L", "stock": 15 }
-      ]
-    }
-  ]
-
+      {
+        "type": "video",
+        "src": "sample-video.mp4"
+      },
+      {
+        "type": "image",
+        "src": "button-image1.png"
+      },
+      {
+        "type": "image",
+        "src": "button-image2.png"
+      }
+    ],
+    "variants": [
+      {
+        "color": "#000",
+        "colorName": "Black",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      },
+      {
+        "color": "#fff",
+        "colorName": "White",
+        "sizes": [
+          {
+            "size": "S",
+            "stock": 15
+          },
+          {
+            "size": "M",
+            "stock": 15
+          },
+          {
+            "size": "L",
+            "stock": 15
+          }
+        ]
+      }
+    ]
   }
-
-]               
-
-
+]

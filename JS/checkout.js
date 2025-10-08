@@ -1,7 +1,7 @@
 
 (function () {
   // --- CONFIG ---
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsHCt2UGAo8Zqwu4IHzF2H_rC69Zc1hXqeikTlU91_YoPQWry04Y1BzNoX5QKuaIkDaQ/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRJWBVCyEowQuX1zpqSVIZBZTTug-zeEDC7X5nRTS3Ev_zIwv11X7BiBmBrrGd-wGllg/exec";
 
   // --- DATA (district -> upazila) ---
     const data = {
@@ -120,7 +120,45 @@
   // initialize district list
   populateDistricts();
 
-  // --- Auto-save checkout info to localStorage ---
+    // --- Auto-save checkout info to localStorage ---
+  function saveCheckoutData() {
+    console.log("Saving checkout data...", { selectedDistrict, selectedUpazila }); // Debug log
+    
+    // try to get existing checkoutData (from CartUtils if present, otherwise from localStorage)
+    let existing = null;
+    if (typeof CartUtils !== "undefined" && CartUtils.getCheckoutData) {
+      existing = CartUtils.getCheckoutData() || {};
+    } else {
+      try { existing = JSON.parse(localStorage.getItem("checkoutData")) || {}; } catch { existing = {}; }
+    }
+  
+    // Build merged object - PRESERVE existing cart/delivery data
+    const merged = Object.assign({}, existing, {
+      Name: fullNameInput.value.trim(),
+      PhoneNumber: phoneNumberInput.value.trim(),
+      StreetAddress: streetAddressInput.value.trim(),
+      AdditionalNotes: additionalNotesInput.value.trim(),
+      CouponCode: couponCodeInput.value.trim(),
+      DistrictAndUpazila: {
+        District: selectedDistrict,
+        Upazila: selectedUpazila
+      }
+    });
+  
+    // Save via CartUtils if possible (keeps a single API), otherwise fallback to localStorage
+    if (typeof CartUtils !== "undefined" && CartUtils.saveCheckoutData) {
+      CartUtils.saveCheckoutData(merged);
+    } else {
+      try {
+        localStorage.setItem("checkoutData", JSON.stringify(merged));
+      } catch (err) {
+        console.error("Failed to persist checkoutData:", err);
+      }
+    }
+    
+    console.log("Saved checkout data:", merged); // Debug log
+  }
+
   function saveCheckoutData() {
     // try to get existing checkoutData (from CartUtils if present, otherwise from localStorage)
     let existing = null;
@@ -153,7 +191,6 @@
     }
   }
 
-
   // Save on typing
   [fullNameInput, phoneNumberInput, streetAddressInput].forEach(input => {
     input.addEventListener("input", saveCheckoutData);
@@ -163,7 +200,12 @@
   districtList.addEventListener("click", saveCheckoutData);
   upazilaList.addEventListener("click", saveCheckoutData);
 
-  // --- Event Delegation: district selection ---
+  // Save on typing - FIXED: Include ALL form fields
+  [fullNameInput, phoneNumberInput, streetAddressInput, additionalNotesInput, couponCodeInput].forEach(input => {
+    input.addEventListener("input", saveCheckoutData);
+  });
+
+    // --- Event Delegation: district selection ---
   districtList.addEventListener("click", (e) => {
     const li = e.target.closest("li");
     if (!li) return;
@@ -177,6 +219,9 @@
     upazilaText.textContent = "উপজেলা নির্বাচন করুন";
     selectedUpazila = "";
     populateUpazilas(selectedDistrict);
+    
+    // FIX: Save checkout data when district is selected
+    saveCheckoutData();
   });
 
   // --- Event Delegation: upazila selection ---
@@ -186,6 +231,9 @@
     selectedUpazila = li.textContent.trim();
     upazilaText.textContent = selectedUpazila;
     upazilaMenu.classList.add("hidden");
+    
+    // FIX: Save checkout data when upazila is selected
+    saveCheckoutData();
   });
 
   // --- Toggle dropdowns ---
@@ -213,29 +261,51 @@
     }
   });
 
-  // --- Restore saved data on load ---
+    // --- Restore saved data on load ---
   document.addEventListener("DOMContentLoaded", () => {
-    // Restore checkout info from localStorage
-    const lsSaved = localStorage.getItem("checkoutData");
-    if (lsSaved) {
+    // Restore checkout info - FIXED: Use CartUtils consistently
+    let savedData = null;
+    
+    // Try to get data from CartUtils first (the way it's saved)
+    if (typeof CartUtils !== "undefined" && CartUtils.getCheckoutData) {
+      savedData = CartUtils.getCheckoutData();
+    } 
+    // Fallback to direct localStorage if CartUtils not available
+    else {
       try {
-        const parsed = JSON.parse(lsSaved);
-        fullNameInput.value = parsed.Name || "";
-        phoneNumberInput.value = parsed.PhoneNumber || "";
-        streetAddressInput.value = parsed.StreetAddress || "";
-        if (parsed.DistrictAndUpazila) {
-          selectedDistrict = parsed.DistrictAndUpazila.District || "";
-          selectedUpazila = parsed.DistrictAndUpazila.Upazila || "";
-          if (selectedDistrict) {
-            districtText.textContent = selectedDistrict;
-            upazilaBtn.disabled = false;
-            upazilaBtn.classList.remove("bg-gray-100", "text-gray-500");
-            upazilaBtn.classList.add("bg-gray-50", "hover:bg-gray-100", "text-gray-700");
-            populateUpazilas(selectedDistrict);
-            if (selectedUpazila) upazilaText.textContent = selectedUpazila;
-          }
+        savedData = JSON.parse(localStorage.getItem("checkoutData")) || {};
+      } catch (e) { 
+        savedData = {};
+      }
+    }
+
+    if (savedData) {
+      fullNameInput.value = savedData.Name || "";
+      phoneNumberInput.value = savedData.PhoneNumber || "";
+      streetAddressInput.value = savedData.StreetAddress || "";
+      additionalNotesInput.value = savedData.AdditionalNotes || "";
+      couponCodeInput.value = savedData.CouponCode || "";
+      
+      // FIXED: Proper district and upazila restoration
+      if (savedData.DistrictAndUpazila) {
+        selectedDistrict = savedData.DistrictAndUpazila.District || "";
+        selectedUpazila = savedData.DistrictAndUpazila.Upazila || "";
+        
+        if (selectedDistrict) {
+          districtText.textContent = selectedDistrict;
+          upazilaBtn.disabled = false;
+          upazilaBtn.classList.remove("bg-gray-100", "text-gray-500");
+          upazilaBtn.classList.add("bg-gray-50", "hover:bg-gray-100", "text-gray-700");
+          populateUpazilas(selectedDistrict);
+          
+          // FIX: Wait a tiny bit for upazila list to populate before setting the text
+          setTimeout(() => {
+            if (selectedUpazila) {
+              upazilaText.textContent = selectedUpazila;
+            }
+          }, 10);
         }
-      } catch (e) { console.error("Failed to parse saved checkoutData", e); }
+      }
     }
 
     // Check if cart has products
@@ -245,13 +315,6 @@
       window.location.href = "index.html";
       return;
     }
-
-    // Restore optional checkout data via CartUtils
-    const saved = (typeof CartUtils !== "undefined" && CartUtils.getCheckoutData) ? CartUtils.getCheckoutData() : null;
-    if (!saved) return;
-
-    if (saved.AdditionalNotes) additionalNotesInput.value = saved.AdditionalNotes;
-    if (saved.CouponCode) couponCodeInput.value = saved.CouponCode;
   });
 
   // --- Validation helpers ---

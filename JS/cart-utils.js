@@ -73,17 +73,6 @@
     }
   });
 
-
-
-
-
-
-
-
-  
-
-
-
   // --- Debug Overlay ---
   function renderCartDebug() {
     const panel = document.getElementById('cartDebugPanel');

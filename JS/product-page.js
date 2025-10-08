@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Product images
     const productImages = product.images || [product.image];
+    
 
     // Gallery HTML
     const galleryHTML = `
@@ -525,3 +526,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 });
+
+
+

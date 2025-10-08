@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const outsideCheckbox = document.getElementById('outsideDelivery');
   const outsideLabel = document.getElementById('outsideLabel');
   const insideLabel = document.getElementById('insideLabel');
+  const checkoutButton = document.getElementById('checkoutButton'); // Added
 
   /**
    * Load delivery configuration
@@ -42,12 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /**
+    /**
    * Save checkout/delivery data for backend (simulation)
-   * Stores "000" when delivery is free and "deliveryType" field.
    */
   function saveCheckoutData(cart, deliveryFee, total, deliveryType) {
+    // Get existing checkout data first
+    const existingData = CartUtils.getCheckoutData() || {};
+    
+    // Only update delivery-related fields, preserve customer info
     const data = {
+      ...existingData, // Preserve existing customer data
       cart,
       deliveryFee: deliveryFee === 0 ? "000" : deliveryFee.toFixed(2),
       total: total.toFixed(2),
@@ -59,67 +64,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /**
    * Check if free delivery should be applied based on rules
+   * - global threshold (highest priority)
+   * - any product that explicitly has freeDelivery (product-level no-delivery)
+   * - product quantity triggers (minQuantityForFree)
    */
+  function shouldApplyFreeDelivery(cart, rules) {
+    const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
+    // Rule 1: Global Free Delivery Threshold (highest priority)
+    if (Number.isFinite(rules.freeDeliveryThreshold) && totalItems >= rules.freeDeliveryThreshold) {
+      return { free: true, reason: 'global' };
+    }
 
+    // Rule X: Product-level free delivery (any product that has no delivery charge)
+    for (const item of cart) {
+      const rule = (rules.productRules && rules.productRules[item.id]) || {};
+      // Accept multiple signals:
+      // - rule.freeDelivery === true (from cart-rules.json)
+      // - item.noDeliveryCharge === true (explicit product field)
+      // - item.deliveryFee === 0 / "0" / "000" (some products might carry this)
+      const itemDeliveryFee = item.hasOwnProperty('deliveryFee') ? item.deliveryFee : undefined;
+      const noDeliveryFlag = rule.freeDelivery === true ||
+                             item.noDeliveryCharge === true ||
+                             itemDeliveryFee === 0 ||
+                             itemDeliveryFee === "0" ||
+                             itemDeliveryFee === "000";
 
+      if (noDeliveryFlag) {
+        return { free: true, reason: 'product-no-delivery', productId: item.id };
+      }
+    }
 
+    // Rule 2: Product Quantity Triggered Free Delivery (second priority)
+    const quantityTriggeredProduct = cart.find(item => {
+      const rule = rules.productRules[item.id];
+      return rule && Number.isFinite(rule.minQuantityForFree) && item.quantity >= rule.minQuantityForFree;
+    });
 
-/**
- * Check if free delivery should be applied based on rules
- * - global threshold (highest priority)
- * - any product that explicitly has freeDelivery (product-level no-delivery)
- * - product quantity triggers (minQuantityForFree)
- */
-function shouldApplyFreeDelivery(cart, rules) {
-  const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    if (quantityTriggeredProduct) {
+      return { free: true, reason: 'quantity', productId: quantityTriggeredProduct.id };
+    }
 
-  // Rule 1: Global Free Delivery Threshold (highest priority)
-  if (Number.isFinite(rules.freeDeliveryThreshold) && totalItems >= rules.freeDeliveryThreshold) {
-    return { free: true, reason: 'global' };
+    // Rule 3 (existing): Single-product freeDelivery when only one product and its rule has freeDelivery true
+    if (cart.length === 1) {
+      const singleItem = cart[0];
+      const rule = rules.productRules[singleItem.id];
+      if (rule && rule.freeDelivery) {
+        return { free: true, reason: 'single-product', productId: singleItem.id };
+      }
+    }
+
+    return { free: false, reason: null };
   }
 
-  // Rule X: Product-level free delivery (any product that has no delivery charge)
-  for (const item of cart) {
-    const rule = (rules.productRules && rules.productRules[item.id]) || {};
-    // Accept multiple signals:
-    // - rule.freeDelivery === true (from cart-rules.json)
-    // - item.noDeliveryCharge === true (explicit product field)
-    // - item.deliveryFee === 0 / "0" / "000" (some products might carry this)
-    const itemDeliveryFee = item.hasOwnProperty('deliveryFee') ? item.deliveryFee : undefined;
-    const noDeliveryFlag = rule.freeDelivery === true ||
-                           item.noDeliveryCharge === true ||
-                           itemDeliveryFee === 0 ||
-                           itemDeliveryFee === "0" ||
-                           itemDeliveryFee === "000";
-
-    if (noDeliveryFlag) {
-      return { free: true, reason: 'product-no-delivery', productId: item.id };
+  /**
+   * Update checkout button state based on cart contents
+   */
+  function updateCheckoutButton(cart) {
+    if (!checkoutButton) return;
+    
+    if (cart.length === 0) {
+      // Disable the button when cart is empty
+      checkoutButton.disabled = true;
+      checkoutButton.style.opacity = '0.6';
+      checkoutButton.style.cursor = 'not-allowed';
+      checkoutButton.onclick = null; // Remove any click handler
+    } else {
+      // Enable the button when cart has items
+      checkoutButton.disabled = false;
+      checkoutButton.style.opacity = '1';
+      checkoutButton.style.cursor = 'pointer';
+      checkoutButton.onclick = () => window.location.href = 'checkout.html';
     }
   }
-
-  // Rule 2: Product Quantity Triggered Free Delivery (second priority)
-  const quantityTriggeredProduct = cart.find(item => {
-    const rule = rules.productRules[item.id];
-    return rule && Number.isFinite(rule.minQuantityForFree) && item.quantity >= rule.minQuantityForFree;
-  });
-
-  if (quantityTriggeredProduct) {
-    return { free: true, reason: 'quantity', productId: quantityTriggeredProduct.id };
-  }
-
-  // Rule 3 (existing): Single-product freeDelivery when only one product and its rule has freeDelivery true
-  if (cart.length === 1) {
-    const singleItem = cart[0];
-    const rule = rules.productRules[singleItem.id];
-    if (rule && rule.freeDelivery) {
-      return { free: true, reason: 'single-product', productId: singleItem.id };
-    }
-  }
-
-  return { free: false, reason: null };
-}
-
 
   /**
    * Main render function
@@ -127,6 +144,9 @@ function shouldApplyFreeDelivery(cart, rules) {
   async function renderCart() {
     const cart = CartUtils.getCart();
     container.innerHTML = '';
+
+    // Update checkout button state
+    updateCheckoutButton(cart);
 
     if (cart.length === 0) {
       container.innerHTML = '<p>Your cart is empty.</p>';
@@ -288,11 +308,15 @@ function shouldApplyFreeDelivery(cart, rules) {
     saveCheckoutData(cart, deliveryFee, total + deliveryFee, deliveryType);
     CartUtils.updateCartCount();
   }
+
   function saveAndRender(cart) {
     CartUtils.saveCart(cart);
     renderCart();
   }
+
+  // Initialize
   renderCart();
+  
   if (outsideCheckbox) {
     outsideCheckbox.addEventListener('change', () => {
       CartUtils.saveDeliveryChoice(outsideCheckbox.checked ? 'outside' : 'inside');

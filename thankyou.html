@@ -38,6 +38,11 @@
     body > #topBarActual {
       z-index: 1000;
     }
+
+    /* delivery badge style on thank you page */
+    .delivery-info { font-weight:700; margin-top:6px; }
+    .delivery-free { color: #ef4444; }   /* red for free */
+    .delivery-pay  { color: #06b6d4; }   /* blue for payment */
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-start pt-24 p-4">
@@ -60,6 +65,7 @@
     <div id="receiptContainer" class="bg-white shadow-xl rounded-2xl w-full p-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Thank You for Your Order!</h2>
       <div id="receipt" class="space-y-4"></div>
+      <div id="deliveryInfo" class="mt-2 text-right delivery-info"></div>
       <div id="totalCharge" class="mt-6 text-right text-lg font-semibold text-gray-800"></div>
 
       <div class="mt-8 flex justify-center space-x-4">
@@ -74,88 +80,269 @@
     </div>
   </div>
 
-
 <script>
-  // --- Step 1: Read temporary checkout data ---
-  const tempCheckout = JSON.parse(sessionStorage.getItem("tempCheckout") || "[]");
+(async function () {
+  // -------------------------
+  // Helpers
+  // -------------------------
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;');
+  }
 
-  // If no cart or empty, redirect home
-  if (!tempCheckout || !tempCheckout.cart || tempCheckout.cart.length === 0) {
-      window.location.replace("index.html");
+  function toNumberSafe(v) {
+    if (v === null || v === undefined) return NaN;
+    const s = String(v).trim();
+    if (s === '') return NaN;
+    const n = Number(s.replace(/[^0-9.]/g, ''));
+    return isFinite(n) ? n : NaN;
+  }
+
+  // load JSON file with fallback (used only when necessary)
+  async function loadJson(path, fallback) {
+    try {
+      const r = await fetch(path, { cache: 'no-store' });
+      if (!r.ok) return fallback;
+      return await r.json();
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  // fast checks for stored free/payment markers
+  function looksLikeFreeVal(v) {
+    if (v === null || v === undefined) return false;
+    const s = String(v).trim().toLowerCase();
+    if (!s) return false;
+    if (s === 'free' || s === '000' || s === '0') return true;
+    const n = Number(s.replace(/[^0-9.]/g, ''));
+    return isFinite(n) && n === 0;
+  }
+  function looksLikePaymentVal(v) {
+    if (v === null || v === undefined) return false;
+    const s = String(v).trim().toLowerCase();
+    if (!s) return false;
+    return s === 'payment' || s === 'paid' || s.indexOf('pay') !== -1;
+  }
+
+  // re-implement shouldApplyFreeDelivery (same as cart)
+  function shouldApplyFreeDelivery(cart, rules) {
+    const totalItems = cart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+    if (Number.isFinite(rules.freeDeliveryThreshold) && totalItems >= rules.freeDeliveryThreshold) {
+      return { free: true, reason: 'global' };
+    }
+
+    for (const item of cart) {
+      const rule = (rules.productRules && rules.productRules[item.id]) || {};
+      const itemDeliveryFee = (item && Object.prototype.hasOwnProperty.call(item, 'deliveryFee')) ? item.deliveryFee : undefined;
+      const noDeliveryFlag = rule.freeDelivery === true ||
+                             item.noDeliveryCharge === true ||
+                             itemDeliveryFee === 0 ||
+                             itemDeliveryFee === "0" ||
+                             itemDeliveryFee === "000";
+      if (noDeliveryFlag) return { free: true, reason: 'product-no-delivery', productId: item.id };
+    }
+
+    const quantityTriggeredProduct = cart.find(item => {
+      const rule = rules.productRules[item.id];
+      return rule && Number.isFinite(rule.minQuantityForFree) && (Number(item.quantity) || 0) >= rule.minQuantityForFree;
+    });
+    if (quantityTriggeredProduct) return { free: true, reason: 'quantity', productId: quantityTriggeredProduct.id };
+
+    if (cart.length === 1) {
+      const singleItem = cart[0];
+      const rule = rules.productRules[singleItem.id];
+      if (rule && rule.freeDelivery) return { free: true, reason: 'single-product', productId: singleItem.id };
+    }
+
+    return { free: false, reason: null };
+  }
+
+  // Efficient compute: prefer stored tempCheckout values, fallback to calculation that fetches both files in parallel
+  async function computeDelivery(tempCheckout) {
+    const tc = tempCheckout || null;
+    const cart = (tc && Array.isArray(tc.cart)) ? tc.cart : [];
+
+    // 1) If tempCheckout has explicit deliveryType or deliveryFee, use those immediately
+    if (tc) {
+      if (tc.deliveryType && String(tc.deliveryType).trim() !== '') {
+        if (looksLikeFreeVal(tc.deliveryType)) {
+          return { deliveryFee: 0, deliveryLabel: 'Free', source: 'stored.deliveryType' };
+        }
+        if (looksLikePaymentVal(tc.deliveryType)) {
+          // if we have a numeric deliveryFee stored, return it, else compute fee (fallthrough)
+          if (tc.deliveryFee !== undefined && tc.deliveryFee !== null && String(tc.deliveryFee).trim() !== '') {
+            const storedFeeNum = toNumberSafe(tc.deliveryFee);
+            if (!isNaN(storedFeeNum)) return { deliveryFee: storedFeeNum, deliveryLabel: 'Payment', source: 'stored.deliveryType+fee' };
+            // if stored fee not parseable, fall through to compute
+          } else {
+            // know it's Payment but no amount — fall through to compute amount
+          }
+        }
+      }
+
+      // check stored deliveryFee independent of deliveryType
+      if (tc.deliveryFee !== undefined && tc.deliveryFee !== null && String(tc.deliveryFee).trim() !== '') {
+        const dfRaw = tc.deliveryFee;
+        if (looksLikeFreeVal(dfRaw)) return { deliveryFee: 0, deliveryLabel: 'Free', source: 'stored.deliveryFee' };
+        const feeNum = toNumberSafe(dfRaw);
+        if (!isNaN(feeNum)) return { deliveryFee: feeNum, deliveryLabel: feeNum === 0 ? 'Free' : 'Payment', source: 'stored.deliveryFeeNumeric' };
+      }
+    }
+
+    // 2) Need to compute: fetch files in parallel for speed
+    const [deliveryData, rules] = await Promise.all([
+      loadJson('delivery.json', { baseFee: 10, options: { inside: { extra: 0 }, outside: { extra: 5 } }}),
+      loadJson('cart-rules.json', { freeDeliveryThreshold: Infinity, productRules: {} })
+    ]);
+
+    const deliveryChoice = (tc && tc.deliveryChoice) ? tc.deliveryChoice : 'inside';
+    const freeResult = shouldApplyFreeDelivery(cart, rules);
+
+    let deliveryFee = (Number(deliveryData.baseFee) || 0) + ((deliveryData.options && deliveryData.options[deliveryChoice] && Number(deliveryData.options[deliveryChoice].extra)) ? Number(deliveryData.options[deliveryChoice].extra) : 0);
+    if (freeResult.free) deliveryFee = 0;
+
+    // respect stored deliveryType if it said 'free' but we fell through earlier
+    if (tc && tc.deliveryType && looksLikeFreeVal(tc.deliveryType)) deliveryFee = 0;
+
+    return { deliveryFee: isFinite(deliveryFee) ? deliveryFee : 0, deliveryLabel: deliveryFee === 0 ? 'Free' : 'Payment', source: 'computed' };
+  }
+
+  // -------------------------
+  // Main: render receipt efficiently
+  // -------------------------
+  const tempCheckoutRaw = sessionStorage.getItem("tempCheckout");
+  let tempCheckout;
+  try { tempCheckout = JSON.parse(tempCheckoutRaw || "null"); } catch(e) { tempCheckout = null; }
+
+  if (!tempCheckout || !Array.isArray(tempCheckout.cart) || tempCheckout.cart.length === 0) {
+    // no cart — go home
+    window.location.replace("index.html");
+    return;
   }
 
   const receiptDiv = document.getElementById("receipt");
-  const deliveryCharge = 50;
-  let totalAmount = 0;
+  const deliveryInfoDiv = document.getElementById("deliveryInfo");
+  const totalChargeDiv = document.getElementById("totalCharge");
 
-  // --- Step 2: Render receipt ---
-  tempCheckout.cart.forEach((item, index) => {
-      const itemTotal = item.price * item.quantity;
-      totalAmount += itemTotal;
+  const cart = tempCheckout.cart;
+  // build receipt fragment once
+  const frag = document.createDocumentFragment();
+  let subtotal = 0;
 
-      const div = document.createElement("div");
-      div.className = "flex justify-between border-b pb-2 items-center";
-      div.innerHTML = `
-        <div class="flex items-center space-x-4">
-          <img src="image/${item.image || 'placeholder.png'}" class="w-16 h-16 object-cover rounded-md border">
-          <div>
-            <p class="font-semibold">${index+1}. ${item.title}</p>
-            ${item.color ? `<p class="text-gray-500 text-sm">Color: ${item.color}</p>` : ""}
-            ${item.size ? `<p class="text-gray-500 text-sm">Size: ${item.size}</p>` : ""}
-            <p class="text-gray-500 text-sm">Qty: ${item.quantity}</p>
-          </div>
-        </div>
-        <div class="font-semibold">৳${itemTotal.toFixed(2)}</div>
-      `;
-      receiptDiv.appendChild(div);
-  });
+  for (let i = 0; i < cart.length; i++) {
+    const item = cart[i];
+    const unit = toNumberSafe(item.price) || 0;
+    const qty = Number(item.quantity) || 0;
+    const itemTotal = unit * qty;
+    subtotal += itemTotal;
 
-  document.getElementById("totalCharge").innerHTML = `
-    <p>Delivery Charge: ৳${deliveryCharge.toFixed(2)}</p>
-    <p class="text-xl font-bold mt-2">Grand Total: ৳${(totalAmount + deliveryCharge).toFixed(2)}</p>
+    const itemWrapper = document.createElement('div');
+    itemWrapper.className = 'flex justify-between border-b pb-2 items-center';
+
+    // left
+    const left = document.createElement('div');
+    left.className = 'flex items-center space-x-4';
+    const img = document.createElement('img');
+    img.src = 'image/' + (item.image || 'placeholder.png');
+    img.className = 'w-16 h-16 object-cover rounded-md border';
+    img.onerror = function(){ this.style.display = 'none'; };
+    left.appendChild(img);
+
+    const meta = document.createElement('div');
+    const titleP = document.createElement('p');
+    titleP.className = 'font-semibold';
+    titleP.innerHTML = `${i+1}. ${escapeHtml(item.title || '')}`;
+    meta.appendChild(titleP);
+    if (item.color) {
+      const c = document.createElement('p');
+      c.className = 'text-gray-500 text-sm';
+      c.textContent = 'Color: ' + item.color;
+      meta.appendChild(c);
+    }
+    if (item.size) {
+      const s = document.createElement('p');
+      s.className = 'text-gray-500 text-sm';
+      s.textContent = 'Size: ' + item.size;
+      meta.appendChild(s);
+    }
+    const q = document.createElement('p');
+    q.className = 'text-gray-500 text-sm';
+    q.textContent = 'Qty: ' + String(qty);
+    meta.appendChild(q);
+
+    left.appendChild(meta);
+
+    // right
+    const right = document.createElement('div');
+    right.className = 'font-semibold';
+    right.textContent = '৳' + itemTotal.toFixed(2);
+
+    itemWrapper.appendChild(left);
+    itemWrapper.appendChild(right);
+    frag.appendChild(itemWrapper);
+  }
+
+  receiptDiv.appendChild(frag);
+
+  // compute delivery (fast path uses stored data)
+  const deliveryResult = await computeDelivery(tempCheckout);
+
+  if (deliveryResult.deliveryLabel === 'Free') {
+    deliveryInfoDiv.innerHTML = `<div class="delivery-free">🚚 Delivery: Free</div>`;
+  } else if (deliveryResult.deliveryLabel === 'Payment') {
+    deliveryInfoDiv.innerHTML = `<div class="delivery-pay">🚚 Delivery Charge: ৳${Number(deliveryResult.deliveryFee).toFixed(2)}</div>`;
+  } else {
+    // fallback show computed fee (if any) or unknown as payment color
+    deliveryInfoDiv.innerHTML = `<div class="delivery-pay">🚚 Delivery Charge: ৳${Number(deliveryResult.deliveryFee || 0).toFixed(2)}</div>`;
+  }
+
+  const grand = subtotal + (Number(deliveryResult.deliveryFee) || 0);
+  totalChargeDiv.innerHTML = `
+    <p class="text-sm text-gray-600">Subtotal: ৳${subtotal.toFixed(2)}</p>
+    <p class="text-xl font-bold mt-2">Grand Total: ৳${grand.toFixed(2)}</p>
   `;
 
-  // --- Step 3: Remove tempCheckout from sessionStorage immediately after rendering ---
-  sessionStorage.removeItem("tempCheckout");
+  // IMPORTANT: Only clear sessionStorage, NOT localStorage
+  // This preserves delivery choice (deliveryChoice) and cart data for future orders
+  try { 
+    sessionStorage.removeItem("tempCheckout"); 
+    console.log("Cleared sessionStorage tempCheckout, but deliveryChoice in localStorage remains intact");
+  } catch(e){}
 
-  // --- Step 4: Download receipt as PNG (always triggers download) ---
+  // Download handler
   document.getElementById("downloadBtn").addEventListener("click", () => {
-      html2canvas(document.getElementById("receiptContainerWrapper")).then(canvas => {
-          // Always generate a new timestamp in filename to avoid overwrite conflicts
-          const timestamp = Date.now();
-          const link = document.createElement("a");
-          link.download = `receipt_${timestamp}.png`;
-          link.href = canvas.toDataURL("image/png");
-          link.click();
-
-          // Redirect home after short delay
-          setTimeout(() => {
-              window.location.replace("index.html");
-          }, 200);
-      });
+    html2canvas(document.getElementById("receiptContainerWrapper")).then(canvas => {
+      const timestamp = Date.now();
+      const link = document.createElement("a");
+      link.download = `receipt_${timestamp}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      setTimeout(() => { window.location.replace("index.html"); }, 200);
+    });
   });
 
-  // --- Step 5: Home button always redirects ---
+  // Home button
   document.getElementById("homeBtn").addEventListener("click", () => {
-      window.location.replace("index.html");
+    window.location.replace("index.html");
   });
 
-  // --- Step 6: Force back button to go home ---
+  // Prevent back navigation to avoid accidental re-submit
   history.pushState(null, null, location.href);
   history.pushState(null, null, location.href);
+  window.addEventListener("popstate", () => { window.location.replace("index.html"); });
 
-  window.addEventListener("popstate", () => {
-      window.location.replace("index.html");
-  });
-
-  // --- Step 7: Handle page restore (bfcache) ---
+  // Handle bfcache restore
   window.addEventListener("pageshow", (event) => {
-      if (event.persisted) {
-          window.location.replace("index.html");
-      }
+    if (event.persisted) window.location.replace("index.html");
   });
-</script>
 
+})();
+</script>
 
    <!-- Debug Overlay -->
    <!-- <button id="clearCartBtn">Clear Cart (Test)</button>
@@ -163,13 +350,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-

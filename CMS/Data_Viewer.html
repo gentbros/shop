@@ -231,7 +231,7 @@
 
   <script>
     // ---------- configuration (hard-coded) ----------
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzCqlO3QvlBx2jcKh6ZOgmvVvlET1FEBlICy_doVt2WIxeYre8ryj9Z_zpf7g2QSLKr6Q/exec'; // <-- keep your web app URL
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxRJWBVCyEowQuX1zpqSVIZBZTTug-zeEDC7X5nRTS3Ev_zIwv11X7BiBmBrrGd-wGllg/exec'; // <-- keep your web app URL
     const SHEET_NAME = 'Sheet1'; // <-- sheet name
 
     // ---------- state ----------
@@ -654,7 +654,7 @@
       pinnedPosition = null;
       if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     }
-    
+
     // popup will be position:fixed so scrolling won't move it. On resize, we'll re-calc.
    function positionPopupFixedUnderButton(popup, buttonRect) {
      popup.style.position = 'fixed';
