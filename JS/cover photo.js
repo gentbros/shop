@@ -30,7 +30,7 @@
   }
   
   // Auto-advance every 5 seconds
-  setInterval(nextSlide, 5000);
+  setInterval(nextSlide, 7000);
   
   // Initialize
   slideTo(0);

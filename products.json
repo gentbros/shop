@@ -12,7 +12,7 @@
     "image": "button-image1.png",
     "images": [
       "button-image1.png",
-      "button-image2.png"
+      "F_button-image1.png"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -35,31 +35,13 @@
       },
       {
         "type": "image",
-        "src": "button-image2.png"
+        "src": "F_button-image1.png"
       }
     ],
     "variants": [
       {
         "color": "#fff",
         "colorName": "White",
-        "sizes": [
-          {
-            "size": "S",
-            "stock": 15
-          },
-          {
-            "size": "M",
-            "stock": 15
-          },
-          {
-            "size": "L",
-            "stock": 15
-          }
-        ]
-      },
-      {
-        "color": "#000",
-        "colorName": "Black",
         "sizes": [
           {
             "size": "S",
@@ -90,7 +72,7 @@
     "image": "button-image4.png",
     "images": [
       "button-image4.png",
-      "button-image3.png"
+      "F_button-image3.png"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -113,31 +95,13 @@
       },
       {
         "type": "image",
-        "src": "button-image3.png"
+        "src": "F_button-image3.png"
       }
     ],
     "variants": [
       {
         "color": "#000",
         "colorName": "Black",
-        "sizes": [
-          {
-            "size": "S",
-            "stock": 15
-          },
-          {
-            "size": "M",
-            "stock": 15
-          },
-          {
-            "size": "L",
-            "stock": 15
-          }
-        ]
-      },
-      {
-        "color": "#fff",
-        "colorName": "White",
         "sizes": [
           {
             "size": "S",
@@ -168,7 +132,7 @@
     "image": "button-image2.png",
     "images": [
       "button-image2.png",
-      "button-image1.png"
+      "F_button-image2.png"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -187,35 +151,17 @@
       },
       {
         "type": "image",
-        "src": "button-image1.png"
+        "src": "button-image2.png"
       },
       {
         "type": "image",
-        "src": "button-image2.png"
+        "src": "F_button-image2.png"
       }
     ],
     "variants": [
       {
         "color": "#000",
         "colorName": "Black",
-        "sizes": [
-          {
-            "size": "S",
-            "stock": 15
-          },
-          {
-            "size": "M",
-            "stock": 15
-          },
-          {
-            "size": "L",
-            "stock": 15
-          }
-        ]
-      },
-      {
-        "color": "#fff",
-        "colorName": "White",
         "sizes": [
           {
             "size": "S",
@@ -246,7 +192,7 @@
     "image": "button-image3.png",
     "images": [
       "button-image3.png",
-      "button-image4.png"
+      "F_button-image4.png"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -269,28 +215,10 @@
       },
       {
         "type": "image",
-        "src": "button-image2.png"
+        "src": "F_button-image4.png"
       }
     ],
     "variants": [
-      {
-        "color": "#000",
-        "colorName": "Black",
-        "sizes": [
-          {
-            "size": "S",
-            "stock": 15
-          },
-          {
-            "size": "M",
-            "stock": 15
-          },
-          {
-            "size": "L",
-            "stock": 15
-          }
-        ]
-      },
       {
         "color": "#fff",
         "colorName": "White",
