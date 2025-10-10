@@ -3,22 +3,7 @@
   "productRules": {
     "product1": {
       "freeDelivery": false,
-      "minQuantityForFree": 2,
-      "hidePrice": false
-    },
-    "product2": {
-      "freeDelivery": false,
-      "minQuantityForFree": 2,
-      "hidePrice": false
-    },
-    "product3": {
-      "freeDelivery": false,
-      "minQuantityForFree": 2,
-      "hidePrice": false
-    },
-    "product4": {
-      "freeDelivery": false,
-      "minQuantityForFree": 2,
+      "minQuantityForFree": false,
       "hidePrice": false
     }
   }

@@ -9,10 +9,10 @@
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "button-image1.png",
+    "image": "image1.jpg",
     "images": [
-      "button-image1.png",
-      "F_button-image1.png"
+      "image1.jpg",
+      "image2.jpg"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -27,15 +27,15 @@
     "mediaGallery": [
       {
         "type": "video",
-        "src": "sample-video.mp4"
+        "src": "video1.mp4"
       },
       {
         "type": "image",
-        "src": "button-image1.png"
+        "src": "image1.jpg"
       },
       {
         "type": "image",
-        "src": "F_button-image1.png"
+        "src": "image2.jpg"
       }
     ],
     "variants": [
@@ -69,10 +69,10 @@
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "button-image4.png",
+    "image": "image7.jpg",
     "images": [
-      "button-image4.png",
-      "F_button-image3.png"
+      "image5.jpg",
+      "image6.jpg"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -86,16 +86,16 @@
     ],
     "mediaGallery": [
       {
+        "type": "image",
+        "src": "image5.jpg"
+      },
+      {
+        "type": "image",
+        "src": "image6.jpg"
+      },
+      {
         "type": "video",
-        "src": "sample-video.mp4"
-      },
-      {
-        "type": "image",
-        "src": "button-image4.png"
-      },
-      {
-        "type": "image",
-        "src": "F_button-image3.png"
+        "src": "video1.mp4"
       }
     ],
     "variants": [
@@ -129,10 +129,10 @@
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "button-image2.png",
+    "image": "image3.jpg",
     "images": [
-      "button-image2.png",
-      "F_button-image2.png"
+      "image3.jpg",
+      "image4.jpg"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -146,16 +146,16 @@
     ],
     "mediaGallery": [
       {
+        "type": "image",
+        "src": "image3.jpg"
+      },
+      {
+        "type": "image",
+        "src": "image4.jpg"
+      },
+      {
         "type": "video",
-        "src": "sample-video.mp4"
-      },
-      {
-        "type": "image",
-        "src": "button-image2.png"
-      },
-      {
-        "type": "image",
-        "src": "F_button-image2.png"
+        "src": "video1.mp4"
       }
     ],
     "variants": [
@@ -189,10 +189,10 @@
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "button-image3.png",
+    "image": "image5.jpg",
     "images": [
-      "button-image3.png",
-      "F_button-image4.png"
+      "image5.jpg",
+      "image6.jpg"
     ],
     "price": 399,
     "originalPrice": 450,
@@ -206,16 +206,16 @@
     ],
     "mediaGallery": [
       {
+        "type": "image",
+        "src": "image5.jpg"
+      },
+      {
+        "type": "image",
+        "src": "image6.jpg"
+      },
+      {
         "type": "video",
-        "src": "sample-video.mp4"
-      },
-      {
-        "type": "image",
-        "src": "button-image1.png"
-      },
-      {
-        "type": "image",
-        "src": "F_button-image4.png"
+        "src": "video1.mp4"
       }
     ],
     "variants": [
