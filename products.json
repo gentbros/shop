@@ -165,15 +165,15 @@
         "sizes": [
           {
             "size": "S",
-            "stock": 15
+            "stock": 0
           },
           {
             "size": "M",
-            "stock": 15
+            "stock": 0
           },
           {
             "size": "L",
-            "stock": 15
+            "stock": 0
           }
         ]
       }
@@ -225,15 +225,15 @@
         "sizes": [
           {
             "size": "S",
-            "stock": 15
+            "stock": 0
           },
           {
             "size": "M",
-            "stock": 15
+            "stock": 0
           },
           {
             "size": "L",
-            "stock": 15
+            "stock": 0
           }
         ]
       }
