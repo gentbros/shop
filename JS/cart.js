@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (freeDelivery) {
         outsideLabel.textContent = `Free delivery — selection disabled`;
       } else if (deliveryData.options.outside) {
-        outsideLabel.textContent = `Outside City (+৳${deliveryData.options.outside.extra})`;
+        outsideLabel.textContent = `Outside Dhaka (+৳${deliveryData.options.outside.extra})`;
       }
     }
     
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (freeDelivery) {
         insideLabel.textContent = `Free delivery — selection disabled`;
       } else {
-        insideLabel.textContent = `Standard shipping inside city: ৳${deliveryData.baseFee}`;
+        insideLabel.textContent = `Standard shipping inside Dhaka: ৳${deliveryData.baseFee}`;
       }
     }
     
@@ -324,3 +324,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
