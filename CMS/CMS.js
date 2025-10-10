@@ -1,4 +1,3 @@
-
   // CMS client-side editor with a source-toggle button placed in the product list header.
   (function(){
     // Elements
@@ -311,28 +310,166 @@
     function removeChip(kind, idx){ if(!current) return; const p = products.find(x=>x.id===current); if(!p) return; p[kind].splice(idx,1); renderChips(kind === 'categories'?categoriesEl:featuresEl, p[kind], kind); persist(); }
 
     // media / images rendering
-    function renderMedia(arr){ mediaContainer.innerHTML = ''; (arr||[]).forEach((m,i)=>{
-      const box = document.createElement('div'); box.className='mini-thumb'; box.draggable=true; box.dataset.index=i;
-      const removeBtn = document.createElement('button'); removeBtn.className='remove'; removeBtn.textContent='✕'; removeBtn.addEventListener('click',(ev)=>{ ev.stopPropagation(); removeMedia(i); });
-      box.appendChild(removeBtn);
-      if(m.type === 'video'){ const v = document.createElement('video'); v.src = tryVideoPath(m.src); v.controls=false; v.addEventListener('error', ()=>{ v.src = sessionUploads.media[m.src]||'' }); box.appendChild(v); }
-      else { const im = document.createElement('img'); im.src = tryImagePath(m.src); im.onerror = ()=>{ im.src = sessionUploads.media[m.src]||'' }; box.appendChild(im); }
-      box.addEventListener('click', ()=> showBigPreview(m, i, 'media'));
-      box.addEventListener('dragstart', dragStart); box.addEventListener('dragover', dragOver); box.addEventListener('drop', dropMedia);
-      mediaContainer.appendChild(box);
-    }); }
-    function removeMedia(i){ const p = products.find(x=>x.id===current); if(!p) return; p.mediaGallery.splice(i,1); renderMedia(p.mediaGallery); persist(); }
+    function renderMedia(arr){
+      mediaContainer.innerHTML = '';
+      (arr || []).forEach((m, i) => {
+        const box = document.createElement('div');
+        box.className = 'mini-thumb';
+        box.draggable = true;
+        // keep index as dataset but we'll compute fresh on click too
+        box.dataset.index = i;
+        box.style.position = 'relative';
+    
+        // remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';              // prevent accidental form submit
+        removeBtn.className = 'remove';
+        removeBtn.textContent = '✕';
+        // visual / z-index safety
+        removeBtn.style.zIndex = '10';
+        removeBtn.style.position = 'absolute';
+        removeBtn.style.top = '6px';
+        removeBtn.style.right = '6px';
+        removeBtn.style.padding = '3px 6px';
+        removeBtn.style.borderRadius = '6px';
+        removeBtn.style.border = '0';
+        removeBtn.style.background = 'rgba(0,0,0,0.5)';
+        removeBtn.style.color = '#fff';
+        removeBtn.style.cursor = 'pointer';
+    
+        removeBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          // compute index fresh from the DOM at click time
+          const parent = ev.currentTarget.closest('.mini-thumb');
+          if (!parent) return;
+          // prefer dataset if available, fallback to position
+          let idx = Number(parent.dataset.index);
+          if (Number.isNaN(idx)) {
+            idx = Array.from(mediaContainer.children).indexOf(parent);
+          }
+          removeMediaAtIndex(idx);
+        });
+        box.appendChild(removeBtn);
+    
+        // media preview (video or image)
+        if (m.type === 'video') {
+          const v = document.createElement('video');
+          v.src = tryVideoPath(m.src);
+          v.controls = false;
+          v.style.width = '100%';
+          v.style.height = '100%';
+          v.muted = true;
+          // fallback to session upload if server preview missing
+          v.onerror = () => { v.src = sessionUploads.media[m.src] || ''; };
+          box.appendChild(v);
+        } else {
+          const im = document.createElement('img');
+          im.src = tryImagePath(m.src);
+          im.style.width = '100%';
+          im.style.height = '100%';
+          im.onerror = () => { im.src = sessionUploads.media[m.src] || ''; };
+          box.appendChild(im);
+        }
+    
+        // click to preview — ignore clicks that started on the remove button
+        box.addEventListener('click', (ev) => {
+          if (ev.target.closest('.remove')) return; // prevent opening preview when remove clicked
+          // compute fresh index for the preview call too
+          let idx = Number(box.dataset.index);
+          if (Number.isNaN(idx)) idx = Array.from(mediaContainer.children).indexOf(box);
+          showBigPreview(m, idx, 'media');
+        });
+    
+        // drag + drop reordering
+        box.addEventListener('dragstart', dragStart);
+        box.addEventListener('dragover', dragOver);
+        box.addEventListener('drop', dropMedia);
+    
+        mediaContainer.appendChild(box);
+      });
+    }
 
-    function renderImages(arr){ imagesContainer.innerHTML=''; (arr||[]).forEach((src,i)=>{
-      const box = document.createElement('div'); box.className='mini-thumb'; box.dataset.index=i;
-      const btn = document.createElement('button'); btn.className='remove'; btn.textContent='✕'; btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); removeImage(i); });
-      box.appendChild(btn);
-      const img = document.createElement('img'); img.src = tryImagePath(src); img.onerror = ()=>{ img.src = sessionUploads.images[src]||'' }; box.appendChild(img);
-      box.addEventListener('click', ()=> showBigPreview({type:'image', src}, i, 'images'));
-      box.draggable=true; box.addEventListener('dragstart', dragStart); box.addEventListener('dragover', dragOver); box.addEventListener('drop', dropImage);
-      imagesContainer.appendChild(box);
-    }); }
-    function removeImage(i){ const p = products.find(x=>x.id===current); if(!p) return; p.images.splice(i,1); renderImages(p.images); persist(); }
+   // replace old removeMedia with this helper:
+   function removeMediaAtIndex(index){
+     const p = products.find(x => x.id === current);
+     if (!p || !Array.isArray(p.mediaGallery)) return;
+     if (index < 0 || index >= p.mediaGallery.length) return;
+     // remove item
+     p.mediaGallery.splice(index, 1);
+     // re-render and persist
+     renderMedia(p.mediaGallery);
+     persist();
+   }
+
+
+   function renderImages(arr){
+  imagesContainer.innerHTML = '';
+  (arr || []).forEach((src, i) => {
+    const box = document.createElement('div');
+    box.className = 'mini-thumb';
+    box.dataset.index = i;
+    box.style.position = 'relative';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'remove';
+    btn.textContent = '✕';
+    btn.style.zIndex = '10';
+    btn.style.position = 'absolute';
+    btn.style.top = '6px';
+    btn.style.right = '6px';
+    btn.style.padding = '3px 6px';
+    btn.style.borderRadius = '6px';
+    btn.style.border = '0';
+    btn.style.background = 'rgba(0,0,0,0.5)';
+    btn.style.color = '#fff';
+    btn.style.cursor = 'pointer';
+
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const parent = ev.currentTarget.closest('.mini-thumb');
+      if (!parent) return;
+      let idx = Number(parent.dataset.index);
+      if (Number.isNaN(idx)) idx = Array.from(imagesContainer.children).indexOf(parent);
+      removeImageAtIndex(idx);
+    });
+    box.appendChild(btn);
+
+    const img = document.createElement('img');
+    img.src = tryImagePath(src);
+    img.onerror = () => { img.src = sessionUploads.images[src] || ''; };
+    box.appendChild(img);
+
+    box.addEventListener('click', (ev) => {
+      if (ev.target.closest('.remove')) return;
+      let idx = Number(box.dataset.index);
+      if (Number.isNaN(idx)) idx = Array.from(imagesContainer.children).indexOf(box);
+      showBigPreview({ type: 'image', src }, idx, 'images');
+    });
+
+    box.draggable = true;
+    box.addEventListener('dragstart', dragStart);
+    box.addEventListener('dragover', dragOver);
+    box.addEventListener('drop', dropImage);
+
+    imagesContainer.appendChild(box);
+  });
+   }
+   
+   function removeImageAtIndex(index){
+     const p = products.find(x => x.id === current);
+     if (!p || !Array.isArray(p.images)) return;
+     if (index < 0 || index >= p.images.length) return;
+     p.images.splice(index, 1);
+     renderImages(p.images);
+     persist();
+   }
+
+
+
+
 
     function renderMainImage(src){ mainImageArea.innerHTML=''; if(!src){ mainImageArea.appendChild(mainDrop); return; }
       const wrap = document.createElement('div'); wrap.className='big-preview';
@@ -472,9 +609,61 @@
         }
       });
     }
-    wireDrop(mediaDrop, mediaFile, files=> handleFiles(files, 'media'));
-    wireDrop(imagesDrop, imagesFile, files=> handleFiles(files, 'images'));
-    wireDrop(mainDrop, mainFile, files=> handleFiles(files, 'main'));
+
+    
+// --- Media Library Integration ---
+mainSelect.addEventListener('click', () => {
+  if (!current) return alert('Select a product first');
+  MediaLibrary.open({
+    multiple: false,
+    onSelect: (files) => {
+      const p = products.find(x => x.id === current);
+      if (!p) return;
+      const file = files[0];
+      if (file.type === 'image') {
+        p.image = file.name;
+        renderMainImage(file.name);
+        persist();
+      } else {
+        alert('Main image must be an image file');
+      }
+    }
+  });
+});
+
+imagesSelect.addEventListener('click', () => {
+  if (!current) return alert('Select a product first');
+  MediaLibrary.open({
+    multiple: true,
+    onSelect: (files) => {
+      const p = products.find(x => x.id === current);
+      if (!p) return;
+      p.images = p.images || [];
+      files.forEach(f => {
+        if (f.type === 'image') p.images.push(f.name);
+      });
+      renderImages(p.images);
+      persist();
+    }
+  });
+});
+
+mediaSelect.addEventListener('click', () => {
+  if (!current) return alert('Select a product first');
+  MediaLibrary.open({
+    multiple: true,
+    onSelect: (files) => {
+      const p = products.find(x => x.id === current);
+      if (!p) return;
+      p.mediaGallery = p.mediaGallery || [];
+      files.forEach(f => {
+        p.mediaGallery.push({ type: f.type, src: f.name });
+      });
+      renderMedia(p.mediaGallery);
+      persist();
+    }
+  });
+});
 
     // Stop propagation on the explicit select buttons so their clicks don't bubble up
     mediaSelect.addEventListener('click', (e)=>{ e.stopPropagation(); mediaFile.click(); });

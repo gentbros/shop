@@ -37,6 +37,22 @@
     .meta p{margin:2px 0 0 0;color:var(--muted);font-size:12px}
     .product-id{background:var(--accent);color:var(--card);font-size:11px;font-weight:bold;padding:2px 6px;border-radius:4px;margin-right:6px;}
 
+    /* ensure remove button is visible and clickable */
+    .mini-thumb { position: relative; }
+    .mini-thumb .remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      z-index: 10;
+      background: rgba(0,0,0,0.5);
+      border: 0;
+      color: #fff;
+      padding: 3px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .mini-thumb .remove:focus { outline: 2px solid rgba(6,182,212,0.25); }
+
     /* Editor form */
     form{display:grid;grid-template-columns:1fr 320px;gap:12px}
     @media(max-width:1100px){form{grid-template-columns:1fr}}
@@ -160,28 +176,34 @@
             <div class="chips" id="features"></div>
           </div>
 
-          <div class="field">
-            <label>Main image</label>
-            <div id="mainImageArea">
-              <div class="drop" id="mainDrop">Drag & drop a main image here or <button id="mainSelect" type="button">Choose</button>
-                <input id="mainFile" type="file" accept="image/*" style="display:none"/></div>
-            </div>
-          </div>
+<div class="field">
+  <label>Main image</label>
+  <div id="mainImageArea">
+    <div class="drop" id="mainDrop">
+      Click <button id="mainSelect" type="button">Choose image</button>
+    </div>
+  </div>
+</div>
 
-          <div class="field">
-            <label>Other images</label>
-            <div id="imagesContainer" class="thumbs"></div>
-            <div class="drop" id="imagesDrop">Drag & drop images here or <button id="imagesSelect" type="button">Select images</button>
-              <input id="imagesFile" type="file" accept="image/*" multiple style="display:none"/></div>
-          </div>
+<div class="field">
+  <label>Other images</label>
+  <div id="imagesContainer" class="thumbs"></div>
+  <div class="drop" id="imagesDrop">
+    Click <button id="imagesSelect" type="button">Select images</button>
+  </div>
+</div>
 
-          <div class="field">
-            <label>Media gallery</label>
-            <div id="mediaContainer" class="thumbs"></div>
-            <div class="drop" id="mediaDrop">Drag & drop images/videos here or <button id="mediaSelect" type="button">Select files</button>
-              <input id="mediaFile" type="file" accept="image/*,video/*" multiple style="display:none"/></div>
-            <small class="muted">Previews prefer files located at <code>../image/</code> and <code>../video/</code>. If your filename exists there, that file will be loaded. Otherwise a temporary thumbnail is shown (you must move the file into the folder if you want persistent server-side preview).</small>
-          </div>
+<div class="field">
+  <label>Media gallery</label>
+  <div id="mediaContainer" class="thumbs"></div>
+  <div class="drop" id="mediaDrop">
+    Click <button id="mediaSelect" type="button">Select files</button>
+  </div>
+  <small class="muted">Files will be loaded from <code>../image/</code> and <code>../video/</code>.</small>
+</div>
+
+
+
 
           <div class="field">
             <label>Variants</label>
@@ -206,13 +228,13 @@
             <input id="reviews" type="number" />
           </div>
 
-          <div class="field">
+          <!-- <div class="field">
             <label>Image / Media previews (click to edit filename)</label>
             <small class="muted">Click any preview to change its filename (this edits JSON only).</small>
             <div style="margin-top:8px">
               <div class="big-preview" id="bigPreview"></div>
             </div>
-          </div>
+          </div> -->
 
           <div class="field">
             <label>Export current product JSON</label>
@@ -237,8 +259,7 @@
   </div>
 
 
-
-  
+  <script src="media-library.js"></script>
   <script src="CMS.js"></script>
 
 </body>
