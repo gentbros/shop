@@ -1,67 +1,67 @@
 [
   {
     "id": "product1",
-  "title": "Demon Slayer & One Piece Anime Drop Combo Offer🔥",
-  "pageUrl": "running-shoes.html",
-  "price": 499,
-  "originalPrice": 399,
-  "description": "আমাদের টিশার্ট এর কোয়ালিটি অনেক প্রিমিয়াম \n\n✅হাই কোয়ালিটি ডিটিএফ প্রিন্ট করা \n✅ প্রিমিয়াম  কটন ফেব্রিক\n✅অনেক আরামদায়ক আর স্টাইলিশ \n\nআপনি চাইলে ডেলিভারি ম্যানের সামনে গায়ে দিয়ে চেক করে নিতে পারবেন ,এক টাকাও অগ্রিম দিতে হবেনা✅",
-  "categories": [],
-  "features": [],
-  "image": "image9.jpg",
-  "images": [
-    "image9.jpg",
-    "image10.jpg"
-  ],
-  "rating": "★★★★★",
-  "reviews": 11,
-  "mediaGallery": [],
-  "variants": [
-    {
-      "colorName": "",
-      "color": "#6e6e6e",
-      "sizes": [
-        {
-          "size": "M",
-          "stock": 10
-        },
-        {
-          "size": "L",
-          "stock": 10
-        },
-        {
-          "size": "XL",
-          "stock": 10
-        }
-      ]
-    }
-  ]
-    },
+    "title": "Demon Slayer & One Piece Anime Drop Combo Offer🔥",
+    "pageUrl": "running-shoes.html",
+    "price": 499,
+    "originalPrice": 399,
+    "description": "আমাদের টিশার্ট এর কোয়ালিটি অনেক প্রিমিয়াম \n\n✅হাই কোয়ালিটি ডিটিএফ প্রিন্ট করা \n✅ প্রিমিয়াম  কটন ফেব্রিক\n✅অনেক আরামদায়ক আর স্টাইলিশ \n\nআপনি চাইলে ডেলিভারি ম্যানের সামনে গায়ে দিয়ে চেক করে নিতে পারবেন ,এক টাকাও অগ্রিম দিতে হবেনা✅",
+    "categories": [],
+    "features": [],
+    "image": "image9.jpg",
+    "images": [
+      "image9.jpg",
+      "image10.jpg"
+    ],
+    "rating": "★★★★★",
+    "reviews": 11,
+    "mediaGallery": [],
+    "variants": [
+      {
+        "colorName": "",
+        "color": "#6e6e6e",
+        "sizes": [
+          {
+            "size": "M",
+            "stock": 10
+          },
+          {
+            "size": "L",
+            "stock": 10
+          },
+          {
+            "size": "XL",
+            "stock": 10
+          }
+        ]
+      }
+    ]
+  },
   {
     "id": "product2",
     "title": "White Demon Slayer t-shirt",
     "pageUrl": "running-shoes.html",
+    "price": 399,
+    "originalPrice": 450,
+    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "categories": [
       "anime",
       "demon slayer",
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "image1.jpg",
-    "images": [
-      "image1.jpg",
-      "image2.jpg"
-    ],
-    "price": 399,
-    "originalPrice": 450,
-    "rating": "★★★★★",
-    "reviews": 8,
-    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "features": [
       "Anime",
       "t-shirt",
       "drop shoulder"
     ],
+    "image": "image1.jpg",
+    "images": [
+      "image1.jpg",
+      "image2.jpg"
+    ],
+    "rating": "★★★★★",
+    "reviews": 8,
     "mediaGallery": [
       {
         "type": "video",
@@ -82,7 +82,7 @@
         "colorName": "White",
         "sizes": [
           {
-            "size": "S",
+            "size": "XL",
             "stock": 15
           },
           {
@@ -101,27 +101,27 @@
     "id": "product3",
     "title": "Black one piece t-shirt",
     "pageUrl": "running-shoes.html",
+    "price": 399,
+    "originalPrice": 450,
+    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "categories": [
       "anime",
       "one piece",
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "image7.jpg",
-    "images": [
-      "image5.jpg",
-      "image6.jpg"
-    ],
-    "price": 399,
-    "originalPrice": 450,
-    "rating": "★★★★☆",
-    "reviews": 7,
-    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "features": [
       "Anime",
       "t-shirt",
       "drop shoulder"
     ],
+    "image": "image7.jpg",
+    "images": [
+      "image5.jpg",
+      "image6.jpg"
+    ],
+    "rating": "★★★★☆",
+    "reviews": 7,
     "mediaGallery": [
       {
         "type": "image",
@@ -142,7 +142,7 @@
         "colorName": "Black",
         "sizes": [
           {
-            "size": "S",
+            "size": "XL",
             "stock": 15
           },
           {
@@ -161,27 +161,27 @@
     "id": "product4",
     "title": "Black Demon Slayer t-shirt",
     "pageUrl": "running-shoes.html",
+    "price": 399,
+    "originalPrice": 450,
+    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "categories": [
       "anime",
       "demon slayer",
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "image3.jpg",
-    "images": [
-      "image3.jpg",
-      "image4.jpg"
-    ],
-    "price": 399,
-    "originalPrice": 450,
-    "rating": "★★★★★",
-    "reviews": 10,
-    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "features": [
       "Anime",
       "t-shirt",
       "drop shoulder"
     ],
+    "image": "image3.jpg",
+    "images": [
+      "image3.jpg",
+      "image4.jpg"
+    ],
+    "rating": "★★★★★",
+    "reviews": 10,
     "mediaGallery": [
       {
         "type": "image",
@@ -202,7 +202,7 @@
         "colorName": "Black",
         "sizes": [
           {
-            "size": "S",
+            "size": "XL",
             "stock": 0
           },
           {
@@ -221,27 +221,27 @@
     "id": "product5",
     "title": "white one piece t-shirt",
     "pageUrl": "running-shoes.html",
+    "price": 399,
+    "originalPrice": 450,
+    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "categories": [
       "anime",
       "one piece",
       "drop-shoulder",
       "t-shirt"
     ],
-    "image": "image5.jpg",
-    "images": [
-      "image5.jpg",
-      "image6.jpg"
-    ],
-    "price": 399,
-    "originalPrice": 450,
-    "rating": "★★★★★",
-    "reviews": 12,
-    "description": "A standard, fashionable essential designed for everyday wear. With its relaxed drop-shoulder silhouette, this tee combines classic style and modern comfort—perfect for versatile, effortless looks.",
     "features": [
       "Anime",
       "t-shirt",
       "drop shoulder"
     ],
+    "image": "image5.jpg",
+    "images": [
+      "image5.jpg",
+      "image6.jpg"
+    ],
+    "rating": "★★★★★",
+    "reviews": 12,
     "mediaGallery": [
       {
         "type": "image",
@@ -262,7 +262,7 @@
         "colorName": "White",
         "sizes": [
           {
-            "size": "S",
+            "size": "XL",
             "stock": 0
           },
           {
