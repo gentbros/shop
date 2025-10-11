@@ -79,4 +79,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       });
   });
+  
+
+// at the end of the successful .then() after you've appended cards:
+document.dispatchEvent(new Event('productsRendered'));
+
+
+
 });
