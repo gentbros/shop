@@ -1,6 +1,44 @@
 [
   {
     "id": "product1",
+  "title": "Demon Slayer & One Piece Anime Drop Combo Offer🔥",
+  "pageUrl": "running-shoes.html",
+  "price": 499,
+  "originalPrice": 399,
+  "description": "আমাদের টিশার্ট এর কোয়ালিটি অনেক প্রিমিয়াম \n\n✅হাই কোয়ালিটি ডিটিএফ প্রিন্ট করা \n✅ প্রিমিয়াম  কটন ফেব্রিক\n✅অনেক আরামদায়ক আর স্টাইলিশ \n\nআপনি চাইলে ডেলিভারি ম্যানের সামনে গায়ে দিয়ে চেক করে নিতে পারবেন ,এক টাকাও অগ্রিম দিতে হবেনা✅",
+  "categories": [],
+  "features": [],
+  "image": "image9.jpg",
+  "images": [
+    "image9.jpg",
+    "image10.jpg"
+  ],
+  "rating": "★★★★★",
+  "reviews": 11,
+  "mediaGallery": [],
+  "variants": [
+    {
+      "colorName": "",
+      "color": "#6e6e6e",
+      "sizes": [
+        {
+          "size": "M",
+          "stock": 10
+        },
+        {
+          "size": "L",
+          "stock": 10
+        },
+        {
+          "size": "XL",
+          "stock": 10
+        }
+      ]
+    }
+  ]
+    },
+  {
+    "id": "product2",
     "title": "White Demon Slayer t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
@@ -60,7 +98,7 @@
     ]
   },
   {
-    "id": "product2",
+    "id": "product3",
     "title": "Black one piece t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
@@ -120,7 +158,7 @@
     ]
   },
   {
-    "id": "product3",
+    "id": "product4",
     "title": "Black Demon Slayer t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
@@ -180,7 +218,7 @@
     ]
   },
   {
-    "id": "product4",
+    "id": "product5",
     "title": "white one piece t-shirt",
     "pageUrl": "running-shoes.html",
     "categories": [
@@ -238,25 +276,5 @@
         ]
       }
     ]
-  },
-  {
-    "id": "product5",
-    "title": "Demon Slayer & One Piece Anime Drop Combo Offer🔥",
-    "pageUrl": "running-shoes.html",
-    "price": 499,
-    "originalPrice": 399,
-    "description": "আমাদের টিশার্ট এর কোয়ালিটি অনেক প্রিমিয়াম \n\n✅হাই কোয়ালিটি ডিটিএফ প্রিন্ট করা \n✅ প্রিমিয়াম  কটন ফেব্রিক\n✅অনেক আরামদায়ক আর স্টাইলিশ \n\nআপনি চাইলে ডেলিভারি ম্যানের সামনে গায়ে দিয়ে চেক করে নিতে পারবেন ,এক টাকাও অগ্রিম দিতে হবেনা✅",
-    "categories": [],
-    "features": [],
-    "image": "image9.jpg",
-    "images": [
-      "image4.jpg",
-      "image6.jpg",
-      "image10.jpg"
-    ],
-    "rating": "★★★★★",
-    "reviews": 11,
-    "mediaGallery": [],
-    "variants": []
   }
 ]
