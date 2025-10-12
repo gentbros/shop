@@ -2,7 +2,7 @@
   "freeDeliveryThreshold": 2,
   "productRules": {
     "product1": {
-      "freeDelivery": false,
+      "freeDelivery": true,
       "minQuantityForFree": false,
       "hidePrice": false
     }
