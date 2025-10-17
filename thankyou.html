@@ -344,6 +344,115 @@
 })();
 </script>
 
+
+
+<!-- GIF Animation -->
+<div id="bottomGifContainer"></div>
+
+<style>
+  #bottomGifContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 9999;
+    display: flex;
+    gap: 10px; /* spacing between multiple GIFs */
+  }
+  #bottomGifContainer img {
+    width: var(--gif-width, 150px);
+    height: var(--gif-height, auto);
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const container = document.getElementById("bottomGifContainer");
+  if (!container) return;
+
+  const GIF12 = "gif/gif12.gif";
+
+  // Preload GIF
+  const i = new Image();
+  i.src = GIF12;
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function clearContainer() {
+    while (container.firstChild) container.removeChild(container.firstChild);
+  }
+
+  let gifRunId = 0;
+
+  function showGifElementAsync(src, duration = Infinity, runId) {
+    return new Promise(resolve => {
+      if (runId !== gifRunId) {
+        clearContainer();
+        return resolve();
+      }
+
+      clearContainer();
+      const img = document.createElement("img");
+      img.src = src;
+      img.style.opacity = 0;
+      img.style.transition = "opacity 0.35s ease";
+      img.alt = "Animated sequence";
+      container.appendChild(img);
+
+      requestAnimationFrame(() => {
+        if (runId === gifRunId) img.style.opacity = 1;
+      });
+
+      if (duration === Infinity) return;
+
+      const timeoutId = setTimeout(() => {
+        if (runId !== gifRunId) {
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+        img.style.opacity = 0;
+        setTimeout(() => {
+          if (runId !== gifRunId) {
+            if (container.contains(img)) container.removeChild(img);
+            return resolve();
+          }
+          if (container.contains(img)) container.removeChild(img);
+          resolve();
+        }, 350);
+      }, duration);
+
+      const cancelPoll = setInterval(() => {
+        if (runId !== gifRunId) {
+          clearInterval(cancelPoll);
+          clearTimeout(timeoutId);
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+      }, 150);
+    });
+  }
+
+  async function startGifLogic() {
+    const myRun = ++gifRunId;
+
+    // Show GIF12 for 22s
+    await showGifElementAsync(GIF12, 22000, myRun);
+  }
+
+  // Expose globally
+  window.startGifLogic = startGifLogic;
+
+  // Start automatically
+  startGifLogic();
+});
+</script>
+
+
+
    <!-- Debug Overlay -->
    <!-- <button id="clearCartBtn">Clear Cart (Test)</button>
    <div id="cartDebugPanel"></div> -->

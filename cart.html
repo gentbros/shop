@@ -82,6 +82,159 @@
   </main>
 
 
+
+
+
+
+
+
+
+   <!-- GIF Animation -->
+   <div id="bottomGifContainer"></div>
+   
+   <style>
+  #bottomGifContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 9999;
+    display: flex;
+    gap: 10px; /* spacing between multiple GIFs */
+  }
+  #bottomGifContainer img {
+    width: var(--gif-width, 150px);
+    height: var(--gif-height, auto);
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+   </style>
+   
+   <script>
+document.addEventListener("DOMContentLoaded", function () {
+  const container = document.getElementById("bottomGifContainer");
+  if (!container) return;
+
+  const GIF8 = "gif/gif8.gif";  // cart has product sequence
+  const GIF9 = "gif/gif9.gif";  // looping GIF for cart
+  const GIF10 = "gif/gif10.gif"; // empty cart sequence 1
+  const GIF11 = "gif/gif11.gif"; // empty cart sequence 2
+
+  // Preload GIFs
+  [GIF8, GIF9, GIF10, GIF11].forEach(src => { const i = new Image(); i.src = src; });
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function clearContainer() {
+    while (container.firstChild) container.removeChild(container.firstChild);
+  }
+
+  let gifRunId = 0; // track runs to cancel previous loops
+
+  function showGifElementAsync(src, duration = Infinity, runId) {
+    return new Promise(resolve => {
+      if (runId !== gifRunId) {
+        clearContainer();
+        return resolve();
+      }
+
+      clearContainer();
+      const img = document.createElement("img");
+      img.src = src;
+      img.style.opacity = 0;
+      img.style.transition = "opacity 0.35s ease";
+      img.alt = "Animated sequence";
+      container.appendChild(img);
+
+      requestAnimationFrame(() => {
+        if (runId === gifRunId) img.style.opacity = 1;
+      });
+
+      if (duration === Infinity) return;
+
+      const timeoutId = setTimeout(() => {
+        if (runId !== gifRunId) {
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+        img.style.opacity = 0;
+        setTimeout(() => {
+          if (runId !== gifRunId) {
+            if (container.contains(img)) container.removeChild(img);
+            return resolve();
+          }
+          if (container.contains(img)) container.removeChild(img);
+          resolve();
+        }, 350);
+      }, duration);
+
+      const cancelPoll = setInterval(() => {
+        if (runId !== gifRunId) {
+          clearInterval(cancelPoll);
+          clearTimeout(timeoutId);
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+      }, 150);
+    });
+  }
+
+  function getCartSafely() {
+    try {
+      return (window.CartUtils && CartUtils.getCart && CartUtils.getCart()) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  async function startGifLogic() {
+    const myRun = ++gifRunId;
+    const cart = getCartSafely();
+    const hasItems = cart.some(item => (item.quantity || 0) > 0);
+
+    if (!hasItems) {
+      // Empty cart → show GIF10 for 10s then GIF11 for 10s
+      await showGifElementAsync(GIF10, 10000, myRun);
+      if (myRun !== gifRunId) return;
+      await showGifElementAsync(GIF11, 10000, myRun);
+      return;
+    }
+
+    // Cart has products → run sequence GIF8 → wait 5s → GIF9 indefinitely
+    await delay(1000);
+    if (myRun !== gifRunId) return;
+
+    // Show GIF8 for 5s
+    await showGifElementAsync(GIF8, 5000, myRun);
+    if (myRun !== gifRunId) return;
+
+    // Wait 5s
+    await delay(5000);
+    if (myRun !== gifRunId) return;
+
+    // Show GIF9 indefinitely
+    await showGifElementAsync(GIF9, Infinity, myRun);
+  }
+
+  // Expose globally
+  window.startGifLogic = startGifLogic;
+
+  // Listen to cart updates
+  window.addEventListener('cart:updated', () => startGifLogic());
+
+  // Start automatically
+  startGifLogic();
+});
+   </script>
+
+
+
+
+
+
+
   <!-- Debug Overlay -->
    <!-- <button id="clearCartBtn">Clear Cart (Test)</button>
    <div id="cartDebugPanel"></div> -->

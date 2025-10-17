@@ -77,6 +77,220 @@
    <script src="JS/product-page.js" defer></script>
    <script src="JS/cart-utils.js" defer></script>
 
+
+
+
+<!-- GIF Animation -->
+<div id="bottomGifContainer"></div>
+
+<style>
+  #bottomGifContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 9999;
+    display: flex;
+    gap: 10px; /* spacing between multiple GIFs */
+  }
+  #bottomGifContainer img {
+    width: var(--gif-width, 150px);
+    height: var(--gif-height, auto);
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+</style>
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const container = document.getElementById("bottomGifContainer");
+  if (!container) return;
+
+  const GIF1 = "gif/gif2.gif";
+  const GIF2 = "gif/gif7.gif";
+  const GIF3 = "gif/gif6.gif";
+  const GIF4 = "gif/gif5.gif"; // cart GIF
+
+  // Preload all GIFs
+  [GIF1, GIF2, GIF3, GIF4].forEach(src => { const i = new Image(); i.src = src; });
+
+  // Helper: small delay
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function clearContainer() {
+    while (container.firstChild) container.removeChild(container.firstChild);
+  }
+
+  // Global run id to cancel previous runs when a new run starts
+  let gifRunId = 0;
+
+  // Shows a GIF and resolves after it's fully faded out (if duration is finite).
+  // Accepts a runId so it can detect cancellation.
+  function showGifElementAsync(src, duration = Infinity, runId) {
+    return new Promise(resolve => {
+      // If this run is already cancelled, resolve immediately
+      if (runId !== gifRunId) {
+        clearContainer();
+        return resolve();
+      }
+
+      clearContainer();
+      const img = document.createElement("img");
+      img.src = src;
+      img.style.opacity = 0;
+      img.style.transition = "opacity 0.35s ease";
+      img.alt = "Animated sequence";
+      container.appendChild(img);
+
+      // fade in if still active
+      requestAnimationFrame(() => {
+        if (runId === gifRunId) img.style.opacity = 1;
+      });
+
+      if (duration === Infinity) {
+        // never auto-remove — keep visible until cancelled
+        return;
+      }
+
+      // After `duration`, fade out and then resolve when removed — but check runId frequently
+      const timeoutId = setTimeout(() => {
+        if (runId !== gifRunId) {
+          // cancelled during display
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+        img.style.opacity = 0;
+        setTimeout(() => {
+          if (runId !== gifRunId) {
+            if (container.contains(img)) container.removeChild(img);
+            return resolve();
+          }
+          if (container.contains(img)) container.removeChild(img);
+          resolve();
+        }, 350); // match the opacity transition
+      }, duration);
+
+      // If the run is cancelled while waiting, clear timeout and resolve early
+      // (polling approach: check every 150ms)
+      const cancelPoll = setInterval(() => {
+        if (runId !== gifRunId) {
+          clearInterval(cancelPoll);
+          clearTimeout(timeoutId);
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+      }, 150);
+    });
+  }
+
+  function getCartSafely() {
+    try {
+      return (window.CartUtils && CartUtils.getCart && CartUtils.getCart()) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Main logic as requested; returns a Promise
+  async function startGifLogic(incomingCart) {
+    // increment run id to cancel any previous runs
+    const myRun = ++gifRunId;
+
+    // If a cart was passed in, trust it; otherwise fetch
+    let cart = incomingCart || getCartSafely();
+    let hasItems = cart.some(item => (item.quantity || 0) > 0);
+
+    if (hasItems) {
+      // Cart has product: stop everything else and show cart GIF (GIF4) immediately
+      await delay(2000);
+      // if cancelled while waiting, return
+      if (myRun !== gifRunId) return;
+      await showGifElementAsync(GIF4, 15000, myRun);
+      return;
+    }
+
+    // Empty cart: first run GIF1 (10s) -> GIF2 (5s) -> GIF3 (15s)
+    await delay(1000); // wait 2s after page load
+    if (myRun !== gifRunId) return;
+
+    // GIF1 for 10s
+    await showGifElementAsync(GIF1, 10000, myRun);
+    if (myRun !== gifRunId) return;
+
+    // check cart after GIF1
+    cart = getCartSafely();
+    if (cart.some(item => (item.quantity || 0) > 0)) {
+      // switch to cart flow immediately: show GIF4 for 15s
+      await showGifElementAsync(GIF4, 15000, myRun);
+      return;
+    }
+
+    // GIF2 for 5s
+    await showGifElementAsync(GIF2, 5000, myRun);
+    if (myRun !== gifRunId) return;
+
+    // check cart after GIF2
+    cart = getCartSafely();
+    if (cart.some(item => (item.quantity || 0) > 0)) {
+      await showGifElementAsync(GIF4, 15000, myRun);
+      return;
+    }
+
+    // GIF3 for 15s
+    await showGifElementAsync(GIF3, 15000, myRun);
+    if (myRun !== gifRunId) return;
+
+    // After initial run, loop GIF2 (5s) -> GIF3 (15s) indefinitely,
+    // checking cart before each GIF and switching to cart flow if a product appears.
+    while (myRun === gifRunId) {
+      // check cart at top of loop
+      cart = getCartSafely();
+      if (cart.some(item => (item.quantity || 0) > 0)) {
+        // cart became non-empty — show GIF4 for 15s and finish
+        await showGifElementAsync(GIF4, 15000, myRun);
+        break;
+      }
+
+      // GIF2 (5s)
+      await showGifElementAsync(GIF2, 5000, myRun);
+      if (myRun !== gifRunId) break;
+
+      // check again between loops
+      cart = getCartSafely();
+      if (cart.some(item => (item.quantity || 0) > 0)) {
+        await showGifElementAsync(GIF4, 15000, myRun);
+        break;
+      }
+
+      // GIF3 (15s)
+      await showGifElementAsync(GIF3, 15000, myRun);
+      if (myRun !== gifRunId) break;
+      // continue looping
+    }
+  }
+
+  // Expose the function globally so CartUtils wrapper can call it directly
+  window.startGifLogic = startGifLogic;
+
+  // Also listen to cart:updated events and call startGifLogic immediately
+  window.addEventListener('cart:updated', (e) => {
+    const cart = e && e.detail && e.detail.cart ? e.detail.cart : null;
+    // startGifLogic will cancel previous runs and handle the new cart state
+    try { window.startGifLogic(cart); } catch (err) { /* ignore */ }
+  });
+
+  // Start automatically on DOMContentLoaded
+  startGifLogic();
+});
+</script>
+
+
+
    <!-- Debug Overlay -->
    <!-- <button id="clearCartBtn">Clear Cart (Test)</button>
    <div id="cartDebugPanel"></div> -->

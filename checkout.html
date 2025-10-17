@@ -35,14 +35,14 @@
       <form id="checkoutForm" class="space-y-5">
         <!-- Full Name -->
         <div>
-          <label class="block text-gray-700 mb-1 font-medium">Full Name</label>
+          <label class="block text-gray-700 mb-1 font-medium">Full Name ( নাম )</label>
           <input id="fullName" type="text" placeholder="John Doe"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
         </div>
 
         <!-- Phone -->
         <div>
-          <label class="block text-gray-700 mb-1 font-medium">Phone Number</label>
+          <label class="block text-gray-700 mb-1 font-medium">Phone Number ( মোবাইল নম্বর )</label>
           <input id="phoneNumber" type="text" placeholder="+880 123 456 789"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
         </div>
@@ -81,7 +81,7 @@
 
         <!-- Street Address -->
         <div>
-          <label class="block text-gray-700 mb-1 font-medium">Street Address</label>
+          <label class="block text-gray-700 mb-1 font-medium">Street Address ( ঠিকানা )</label>
           <input id="streetAddress" type="text" placeholder="123 Main St"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
         </div>
@@ -197,6 +197,126 @@
   background: var(--primary-hover-color);
 }
 </style>
+
+
+
+  <!-- GIF Animation -->
+  <div id="bottomGifContainer"></div>
+  
+  <style>
+    #bottomGifContainer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      z-index: 9999;
+      display: flex;
+      gap: 10px; /* spacing between multiple GIFs */
+    }
+    #bottomGifContainer img {
+      width: var(--gif-width, 150px);
+      height: var(--gif-height, auto);
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+  </style>
+  
+
+  
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+  const container = document.getElementById("bottomGifContainer");
+  if (!container) return;
+
+  const GIF4 = "gif/gif4.gif";
+  const GIF11 = "gif/gif11.gif";
+
+  // Preload GIFs
+  [GIF4, GIF11].forEach(src => { const i = new Image(); i.src = src; });
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function clearContainer() {
+    while (container.firstChild) container.removeChild(container.firstChild);
+  }
+
+  let gifRunId = 0;
+
+  function showGifElementAsync(src, duration = Infinity, runId) {
+    return new Promise(resolve => {
+      if (runId !== gifRunId) {
+        clearContainer();
+        return resolve();
+      }
+
+      clearContainer();
+      const img = document.createElement("img");
+      img.src = src;
+      img.style.opacity = 0;
+      img.style.transition = "opacity 0.35s ease";
+      img.alt = "Animated sequence";
+      container.appendChild(img);
+
+      requestAnimationFrame(() => {
+        if (runId === gifRunId) img.style.opacity = 1;
+      });
+
+      if (duration === Infinity) return;
+
+      const timeoutId = setTimeout(() => {
+        if (runId !== gifRunId) {
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+        img.style.opacity = 0;
+        setTimeout(() => {
+          if (runId !== gifRunId) {
+            if (container.contains(img)) container.removeChild(img);
+            return resolve();
+          }
+          if (container.contains(img)) container.removeChild(img);
+          resolve();
+        }, 350);
+      }, duration);
+
+      const cancelPoll = setInterval(() => {
+        if (runId !== gifRunId) {
+          clearInterval(cancelPoll);
+          clearTimeout(timeoutId);
+          if (container.contains(img)) container.removeChild(img);
+          return resolve();
+        }
+      }, 150);
+    });
+  }
+
+  async function startGifLogic() {
+    const myRun = ++gifRunId;
+
+    // Wait 2 seconds
+    await delay(2000);
+    if (myRun !== gifRunId) return;
+
+    // Show GIF4 for 20s
+    await showGifElementAsync(GIF4, 20000, myRun);
+    if (myRun !== gifRunId) return;
+
+    // Wait 10s
+    await delay(10000);
+    if (myRun !== gifRunId) return;
+
+    // Show GIF11 for 10s
+    await showGifElementAsync(GIF11, 10000, myRun);
+  }
+
+  window.startGifLogic = startGifLogic;
+
+  // Start automatically
+  startGifLogic();
+});
+  </script>
 
 
 
